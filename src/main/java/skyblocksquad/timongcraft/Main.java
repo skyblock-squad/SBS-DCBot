@@ -21,9 +21,9 @@ public class Main {
                 .addEventListeners(new Listeners(), new SlashCommands())
                 .build();
 
-        jda.upsertCommand("getbetatester", "Get a beta tester")
+        jda.upsertCommand("applybetatester", "Get a beta tester")
                 .addOption(OptionType.STRING, "mcusername", "Your minecraft username (java)", true)
-                .addOption(OptionType.STRING, "reason", "Reason why do you want to be a beta tester", true)
+                .addOption(OptionType.STRING, "reason", "Reason why do you want to become a beta tester", true)
                 .queue();
 
         System.out.println("[DC-Bot] Finished Initialization");

@@ -22,7 +22,7 @@ public class SlashCommands extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        if (event.getName().equals("getbetatester")) {
+        if (event.getName().equals("applybetatester")) {
             User user = event.getUser();
             long userId = user.getIdLong();
             Instant lastExecutedTime = getLastExecutedTime(userId);
