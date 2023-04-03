@@ -21,7 +21,7 @@ public class Main {
                 .addEventListeners(new Listeners(), new SlashCommands())
                 .build();
 
-        jda.upsertCommand("applybetatester", "Get a beta tester")
+        jda.upsertCommand("applybetatester", "Apply as beta tester")
                 .addOption(OptionType.STRING, "mcusername", "Your minecraft username (java)", true)
                 .addOption(OptionType.STRING, "reason", "Reason why do you want to become a beta tester", true)
                 .queue();

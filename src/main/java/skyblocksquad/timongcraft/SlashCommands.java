@@ -17,7 +17,7 @@ import java.util.Map;
 
 public class SlashCommands extends ListenerAdapter {
     private static final String applicationsChannel = "1092089903690559529";
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss dd.MM.yyyy");
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
     private final Map<Long, Instant> lastExecuted = new HashMap<>();
 
     @Override
@@ -55,6 +55,7 @@ public class SlashCommands extends ListenerAdapter {
                                 Button.success("accept", "Accept"),
                                 Button.danger("reject", "Reject")
                         )
+                        .setSuppressedNotifications(true)
                         .queue(message -> {
                             event.reply("Your application has been submitted.").setEphemeral(true).queue();
                         });
