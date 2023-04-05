@@ -43,8 +43,8 @@ public class SlashCommands extends ListenerAdapter {
                         .setTitle("Beta Tester Application")
                         .setColor(Color.BLUE)
                         .addField("Discord Username", dcUsername, false)
-                        .addField("Created", event.getUser().getTimeCreated().format(formatter), true)
                         .addField("Minecraft Username", mcUsername, false)
+                        .addField("Created", event.getUser().getTimeCreated().format(formatter), true)
                         .addField("Reason", reason, false)
                         .setFooter(dcUserId)
                         .build();

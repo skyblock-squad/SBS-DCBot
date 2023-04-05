@@ -2,11 +2,7 @@ package skyblocksquad.timongcraft;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.UserSnowflake;
-import net.dv8tion.jda.api.entities.channel.Channel;
-import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -25,7 +21,33 @@ public class Listeners extends ListenerAdapter {
 
         if (event.getComponentId().equals("accept")) {
             Role betaTesterRole = event.getGuild().getRolesByName("Beta Tester", true).get(0);
-            event.getGuild().addRoleToMember(UserSnowflake.fromId(event.getUser().getId()), betaTesterRole).queue();
+            String dcUsername = null;
+            String mcUsername = null;
+            MessageEmbed readembed = event.getMessage().getEmbeds().get(0);
+            List<MessageEmbed.Field> fields = readembed.getFields();
+
+            for (MessageEmbed.Field field : fields) {
+                String name = field.getName();
+                String value = field.getValue();
+
+                if (name.equals("Minecraft Username")) {
+                    mcUsername = value;
+                    break;
+                }
+            }
+
+            for (MessageEmbed.Field field : fields) {
+                String name = field.getName();
+                String value = field.getValue();
+
+                if (name.equals("Discord Username")) {
+                    dcUsername = value;
+                    break;
+                }
+            }
+
+            Member member = event.getGuild().getMemberByTag(dcUsername);
+            event.getGuild().addRoleToMember(member, betaTesterRole).queue();
             String appliedUserId = event.getMessage().getEmbeds().get(0).getFooter().getText();
 
             event.getJDA().retrieveUserById(appliedUserId).queue(user -> {
@@ -44,22 +66,8 @@ public class Listeners extends ListenerAdapter {
                     }, failure -> {
                 event.reply("Couldn't get user").setEphemeral(true);
             });
-            String dcUsername = event.getUser().getAsTag();
-            String mcUsername = null;
 
-            MessageEmbed embed = event.getMessage().getEmbeds().get(0);
-            List<MessageEmbed.Field> fields = embed.getFields();
-            for (MessageEmbed.Field field : fields) {
-                String name = field.getName();
-                String value = field.getValue();
-
-                if (name.equals("Minecraft Username")) {
-                    mcUsername = value;
-                    break;
-                }
-            }
-
-            MessageEmbed embed2 = new EmbedBuilder()
+            MessageEmbed embed = new EmbedBuilder()
                     .setTitle("Accepted Beta Tester")
                     .setColor(Color.BLUE)
                     .addField("Discord Username", dcUsername, false)
@@ -69,7 +77,7 @@ public class Listeners extends ListenerAdapter {
 
             event.getMessage().delete().queue();
             event.getChannel()
-                    .sendMessageEmbeds(embed2)
+                    .sendMessageEmbeds(embed)
                     .setSuppressedNotifications(true)
                     .queue();
         } else if (event.getComponentId().equals("reject")) {
