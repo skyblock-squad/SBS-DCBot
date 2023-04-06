@@ -2,6 +2,7 @@ package skyblocksquad.timongcraft;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -37,6 +38,14 @@ public class SlashCommands extends ListenerAdapter {
             if (duration.toHours() < 24) {
                 event.reply("You can only execute this command once a day to prevent spam.").setEphemeral(true).queue();
             } else {
+
+                for (Role roles : event.getMember().getRoles()) {
+                    if (roles.getName().equalsIgnoreCase("Beta Tester")) {
+                        event.reply("You are already a beta tester.").setEphemeral(true).queue();
+                        return;
+                    }
+                }
+
                 updateLastExecutedTime(userId, currentTime);
 
                 MessageEmbed embed = new EmbedBuilder()
