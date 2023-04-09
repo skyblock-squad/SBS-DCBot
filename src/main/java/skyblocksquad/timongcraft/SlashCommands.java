@@ -33,7 +33,7 @@ public class SlashCommands extends ListenerAdapter {
             String dcUsername = event.getUser().getAsTag();
             String dcUserId = event.getUser().getId();
             String mcUsername = event.getOption("mcusername").getAsString();
-            String reason = event.getOption("reason").getAsString();
+            String reason = event.getOption("reason") == null ? "none given" : event.getOption("reason").getAsString();
 
             if (duration.toHours() < 24) {
                 event.reply("You can only execute this command once a day to prevent spam.").setEphemeral(true).queue();

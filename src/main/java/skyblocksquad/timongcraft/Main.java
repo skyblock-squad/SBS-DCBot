@@ -8,6 +8,8 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 import javax.security.auth.login.LoginException;
 import java.util.concurrent.TimeUnit;
@@ -18,9 +20,12 @@ public class Main {
 
     public static void main(String[] args) {
         jda = JDABuilder.createDefault(token)
+                .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_PRESENCES, GatewayIntent.DIRECT_MESSAGES)
+                .enableCache(CacheFlag.MEMBER_OVERRIDES)
                 .setActivity(Activity.watching("on your applications"))
                 .setStatus(OnlineStatus.ONLINE)
                 .addEventListeners(new Listeners(), new SlashCommands())
+                .disableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS)
                 .build();
 
         //Reset slash commands
@@ -28,7 +33,7 @@ public class Main {
 
         jda.upsertCommand("applybetatester", "Apply as beta tester")
                 .addOption(OptionType.STRING, "mcusername", "Your minecraft username (java)", true)
-                .addOption(OptionType.STRING, "reason", "Reason why do you want to become a beta tester", true)
+                .addOption(OptionType.STRING, "reason", "Reason why do you want to become a beta tester", false)
                 .queue();
 
         System.out.println("[DC-Bot] Finished Initialization");
