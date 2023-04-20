@@ -3,7 +3,6 @@ package skyblocksquad.timongcraft;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
@@ -17,15 +16,13 @@ import java.util.Map;
 
 
 public class SlashCommands extends ListenerAdapter {
-    private static final String applicationsChannel = "1092089903690559529";
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
     private final Map<Long, Instant> lastExecuted = new HashMap<>();
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        if (event.getName().equals("applybetatester")) {
-            User user = event.getUser();
-            long userId = user.getIdLong();
+        if(event.getName().equals("applybetatester")) {
+            long userId = event.getUser().getIdLong();
             Instant lastExecutedTime = getLastExecutedTime(userId);
             Instant currentTime = Instant.now();
             Duration duration = Duration.between(lastExecutedTime, currentTime);
@@ -35,12 +32,12 @@ public class SlashCommands extends ListenerAdapter {
             String mcUsername = event.getOption("mcusername").getAsString();
             String reason = event.getOption("reason") == null ? "none given" : event.getOption("reason").getAsString();
 
-            if (duration.toHours() < 24) {
+            if(duration.toHours() < 24) {
                 event.reply("You can only execute this command once a day to prevent spam.").setEphemeral(true).queue();
             } else {
 
                 for (Role roles : event.getMember().getRoles()) {
-                    if (roles.getName().equalsIgnoreCase("Beta Tester")) {
+                    if(roles.getName().equalsIgnoreCase("Beta Tester")) {
                         event.reply("You are already a beta tester.").setEphemeral(true).queue();
                         return;
                     }
@@ -58,7 +55,7 @@ public class SlashCommands extends ListenerAdapter {
                         .setFooter(dcUserId)
                         .build();
 
-                event.getJDA().getTextChannelById(applicationsChannel)
+                event.getJDA().getTextChannelById(Main.getApplicationChannel())
                         .sendMessageEmbeds(embed)
                         .setActionRow(
                                 Button.success("accept", "Accept"),
@@ -69,7 +66,6 @@ public class SlashCommands extends ListenerAdapter {
                             event.reply("Your application has been submitted.").setEphemeral(true).queue();
                         });
             }
-
         }
     }
 
