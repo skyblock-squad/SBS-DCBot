@@ -9,8 +9,11 @@ import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.channel.ChannelCreateEvent;
 import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent;
+import net.dv8tion.jda.api.events.guild.invite.GuildInviteCreateEvent;
 import net.dv8tion.jda.api.events.guild.member.*;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent;
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceGuildDeafenEvent;
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceGuildMuteEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -28,6 +31,7 @@ import skyblocksquad.timongcraft.util.ColorUtils;
 import skyblocksquad.timongcraft.util.MessageCache;
 
 import java.awt.*;
+import java.text.SimpleDateFormat;
 import java.util.function.Consumer;
 
 public class LoggingListeners extends ListenerAdapter {
@@ -436,4 +440,50 @@ public class LoggingListeners extends ListenerAdapter {
             textChannel.sendMessageEmbeds(embedBuilder.build()).setSuppressedNotifications(Main.getLogsSilent()).queue();
     }
 
+    @Override
+    public void onGuildVoiceGuildMute(GuildVoiceGuildMuteEvent event) {
+        MessageEmbed embed = new EmbedBuilder()
+                .setTitle("Voice: User " + (event.isGuildMuted() ? "muted" : "unmuted"))
+                .setColor(Color.BLUE)
+                .addField("User", event.getMember().getAsMention() + " (" + event.getMember().getUser().getAsTag() + ")", false)
+                .setFooter("")
+                .build();
+
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+        if(textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
+    }
+
+    @Override
+    public void onGuildVoiceGuildDeafen(GuildVoiceGuildDeafenEvent event) {
+        MessageEmbed embed = new EmbedBuilder()
+                .setTitle("Voice: User " + (event.isGuildDeafened() ? "deafened" : "undeafened"))
+                .setColor(Color.BLUE)
+                .addField("User", event.getMember().getAsMention() + " (" + event.getMember().getUser().getAsTag() + ")", false)
+                .setFooter("")
+                .build();
+
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+        if(textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
+    }
+
+    @Override
+    public void onGuildInviteCreate(GuildInviteCreateEvent event) {
+        String inviteExpiration = new SimpleDateFormat("dd.MM.yyyy HH:mm").format(System.currentTimeMillis() + (event.getInvite().getMaxAge() * 1000));
+
+        MessageEmbed embed = new EmbedBuilder()
+                .setTitle("Invite Created")
+                .setColor(Color.GREEN)
+                .addField("User", event.getInvite().getInviter().getAsMention() + " (" + event.getInvite().getInviter().getAsTag() + ")", false)
+                .addField("Invite", event.getInvite().getUrl(), false)
+                .addField("Expiration", event.getInvite().getMaxAge() != 0 ? inviteExpiration : "never", false)
+                .addField("Max Uses", event.getInvite().getMaxUses() != 0 ? String.valueOf(event.getInvite().getMaxUses()) : "∞", false)
+                .setFooter("")
+                .build();
+
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+        if(textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
+    }
 }
