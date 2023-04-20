@@ -32,6 +32,7 @@ import skyblocksquad.timongcraft.util.MessageCache;
 
 import java.awt.*;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
 public class LoggingListeners extends ListenerAdapter {
@@ -196,10 +197,13 @@ public class LoggingListeners extends ListenerAdapter {
 
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
+
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Member Joined")
                 .setColor(Color.GREEN)
                 .addField("User", event.getMember().getAsMention() + " (" + event.getMember().getUser().getAsTag() + ")", false)
+                .addField("Created", event.getUser().getTimeCreated().format(formatter), true)
                 .setFooter("")
                 .build();
 
