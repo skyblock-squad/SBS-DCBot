@@ -58,14 +58,25 @@ public class SlashCommands extends ListenerAdapter {
                 event.getJDA().getTextChannelById(Main.getApplicationChannel())
                         .sendMessageEmbeds(embed)
                         .setActionRow(
-                                Button.success("accept", "Accept"),
-                                Button.danger("reject", "Reject")
+                                Button.success("betatestingapply-accept", "Accept"),
+                                Button.danger("betatestingapply-reject", "Reject")
                         )
                         .setSuppressedNotifications(true)
-                        .queue(message -> {
-                            event.reply("Your application has been submitted.").setEphemeral(true).queue();
-                        });
+                        .queue(message -> event.reply("Your application has been submitted").setEphemeral(true).queue());
             }
+        } else if(event.getName().equals("sendpingroles")) {
+            MessageEmbed embed = new EmbedBuilder()
+                    .setTitle("News Ping")
+                    .setColor(Color.BLUE)
+                    .setDescription("Get news notifications")
+                    .build();
+
+            event.getChannel()
+                    .sendMessageEmbeds(embed)
+                    .setActionRow(
+                            Button.secondary("pingroles-news", "Toggle Role")
+                    )
+                    .queue(message -> event.reply("Ping roles selection message sent").setEphemeral(true).queue());
         }
     }
 

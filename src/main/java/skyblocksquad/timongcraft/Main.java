@@ -3,7 +3,9 @@ package skyblocksquad.timongcraft;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
@@ -20,9 +22,11 @@ public class Main {
     private static String welcomeChannel;
     private static String applicationChannel;
     private static String logsChannel;
+    private static String voiceLogsChannel;
     private static boolean logsSilent;
     private static String memberRoleName;
     private static String betaTesterRoleName;
+    private static String pingRolesNewsRoleName;
 
     public static void main(String[] args) {
         String configFileName = "config.yml";
@@ -39,9 +43,11 @@ public class Main {
         welcomeChannel = configHandler.getString("welcomeChannelId");
         applicationChannel = configHandler.getString("applicationChannelId");
         logsChannel = configHandler.getString("logsChannelId");
+        voiceLogsChannel = configHandler.getString("voiceLogsChannelId");
         logsSilent = configHandler.getBoolean("logsSilent");
         memberRoleName = configHandler.getString("MemberRole");
         betaTesterRoleName = configHandler.getString("BetaTesterRole");
+        pingRolesNewsRoleName = configHandler.getString("PingRolesNewsRole");
 
         jda = JDABuilder.createDefault(token)
                 .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_VOICE_STATES)
@@ -61,6 +67,10 @@ public class Main {
                 .addOption(OptionType.STRING, "reason", "Reason why do you want to become a beta tester", false)
                 .queue();
 
+        jda.upsertCommand("sendpingroles", "Sends a message with the ping roles")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR))
+                .queue();
+
         System.out.println("[DC-Bot] Finished Initialization");
     }
 
@@ -70,9 +80,11 @@ public class Main {
             fileWriter.write("welcomeChannelId: WELCOME_CHANNEL_ID\n");
             fileWriter.write("applicationChannelId: APPLICATION_CHANNEL_ID\n");
             fileWriter.write("logsChannelId: LOGS_CHANNEL_ID\n");
+            fileWriter.write("voiceLogsChannelId: VOICE_LOGS_CHANNEL_ID\n");
             fileWriter.write("logsSilent: true\n");
             fileWriter.write("MemberRole: Member\n");
             fileWriter.write("BetaTesterRole: null\n");
+            fileWriter.write("PingRolesNewsRole: null\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -89,10 +101,11 @@ public class Main {
     public static String getLogsChannel() {
         return logsChannel;
     }
+    public static String getVoiceLogsChannel() { return voiceLogsChannel; }
     public static boolean getLogsSilent() {
         return logsSilent;
     }
     public static String getMemberRoleName() { return memberRoleName; }
     public static String getBetaTesterRoleName() { return betaTesterRoleName; }
-
+    public static String getPingRolesNewsRoleName() { return pingRolesNewsRoleName; }
 }

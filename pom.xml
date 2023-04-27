@@ -6,7 +6,7 @@
 
     <groupId>skyblocksquad.timongcraft</groupId>
     <artifactId>SBS-DCBot</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -15,6 +15,7 @@
     </properties>
 
     <build>
+        <finalName>${project.artifactId}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

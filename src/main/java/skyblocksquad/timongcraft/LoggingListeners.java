@@ -100,13 +100,22 @@ public class LoggingListeners extends ListenerAdapter {
         ChannelType type = event.getChannel().getType();
         EmbedBuilder embedBuilder = new EmbedBuilder()
                 .setColor(Color.GREEN)
-                .addField("Channel Name", event.getChannel().getName(), false)
                 .setFooter("");
 
         switch (type) {
             case CATEGORY -> {
                 embedBuilder.setTitle("Category Created");
                 embedBuilder.addField("Category Name", event.getChannel().getName(), false);
+            }
+            case GUILD_PUBLIC_THREAD -> {
+                embedBuilder.setTitle("Thread Created");
+                embedBuilder.addField("Thread Name", event.getChannel().getName(), false);
+                embedBuilder.addField("Type", "Public", false);
+            }
+            case GUILD_PRIVATE_THREAD -> {
+                embedBuilder.setTitle("Thread Created");
+                embedBuilder.addField("Thread Name", event.getChannel().getName(), false);
+                embedBuilder.addField("Type", "Private", false);
             }
             case TEXT -> {
                 embedBuilder.setTitle("Channel Created");
@@ -157,6 +166,16 @@ public class LoggingListeners extends ListenerAdapter {
             case CATEGORY -> {
                 embedBuilder.setTitle("Category Deleted");
                 embedBuilder.addField("Category Name", event.getChannel().getName(), false);
+            }
+            case GUILD_PUBLIC_THREAD -> {
+                embedBuilder.setTitle("Thread Deleted");
+                embedBuilder.addField("Thread Name", event.getChannel().getName(), false);
+                embedBuilder.addField("Type", "Public", false);
+            }
+            case GUILD_PRIVATE_THREAD -> {
+                embedBuilder.setTitle("Thread Deleted");
+                embedBuilder.addField("Thread Name", event.getChannel().getName(), false);
+                embedBuilder.addField("Type", "Private", false);
             }
             case TEXT -> {
                 embedBuilder.setTitle("Channel Deleted");
@@ -420,6 +439,25 @@ public class LoggingListeners extends ListenerAdapter {
     }
 
     @Override
+    public void onGuildInviteCreate(GuildInviteCreateEvent event) {
+        String inviteExpiration = new SimpleDateFormat("dd.MM.yyyy HH:mm").format(System.currentTimeMillis() + (event.getInvite().getMaxAge() * 1000));
+
+        MessageEmbed embed = new EmbedBuilder()
+                .setTitle("Invite Created")
+                .setColor(Color.GREEN)
+                .addField("User", event.getInvite().getInviter().getAsMention() + " (" + event.getInvite().getInviter().getAsTag() + ")", false)
+                .addField("Invite", event.getInvite().getUrl(), false)
+                .addField("Expiration", event.getInvite().getMaxAge() != 0 ? inviteExpiration : "never", false)
+                .addField("Max Uses", event.getInvite().getMaxUses() != 0 ? String.valueOf(event.getInvite().getMaxUses()) : "∞", false)
+                .setFooter("")
+                .build();
+
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+        if(textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
+    }
+
+    @Override
     public void onGuildVoiceUpdate(GuildVoiceUpdateEvent event) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.addField("User", event.getMember().getAsMention() + " (" + event.getMember().getUser().getAsTag() + ")", false);
@@ -439,7 +477,7 @@ public class LoggingListeners extends ListenerAdapter {
             embedBuilder.addField("Channel", event.getChannelJoined().getAsMention() + " (" + event.getChannelJoined().getName() + ")", false);
         } else return;
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getVoiceLogsChannel());
         if(textChannel != null)
             textChannel.sendMessageEmbeds(embedBuilder.build()).setSuppressedNotifications(Main.getLogsSilent()).queue();
     }
@@ -453,7 +491,7 @@ public class LoggingListeners extends ListenerAdapter {
                 .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getVoiceLogsChannel());
         if(textChannel != null)
             textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
     }
@@ -467,26 +505,7 @@ public class LoggingListeners extends ListenerAdapter {
                 .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if(textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-    }
-
-    @Override
-    public void onGuildInviteCreate(GuildInviteCreateEvent event) {
-        String inviteExpiration = new SimpleDateFormat("dd.MM.yyyy HH:mm").format(System.currentTimeMillis() + (event.getInvite().getMaxAge() * 1000));
-
-        MessageEmbed embed = new EmbedBuilder()
-                .setTitle("Invite Created")
-                .setColor(Color.GREEN)
-                .addField("User", event.getInvite().getInviter().getAsMention() + " (" + event.getInvite().getInviter().getAsTag() + ")", false)
-                .addField("Invite", event.getInvite().getUrl(), false)
-                .addField("Expiration", event.getInvite().getMaxAge() != 0 ? inviteExpiration : "never", false)
-                .addField("Max Uses", event.getInvite().getMaxUses() != 0 ? String.valueOf(event.getInvite().getMaxUses()) : "∞", false)
-                .setFooter("")
-                .build();
-
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getVoiceLogsChannel());
         if(textChannel != null)
             textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
     }

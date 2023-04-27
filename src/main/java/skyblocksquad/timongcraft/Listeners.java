@@ -40,7 +40,7 @@ public class Listeners extends ListenerAdapter {
             return;
         }
 
-        if(event.getComponentId().equals("accept")) {
+        if(event.getComponentId().equals("betatestingapply-accept")) {
             Role betaTesterRole = event.getGuild().getRolesByName(Main.getBetaTesterRoleName(), true).get(0);
             String mcUsername = null;
             String reason = null;
@@ -109,8 +109,17 @@ public class Listeners extends ListenerAdapter {
 
 
 
-        } else if(event.getComponentId().equals("reject")) {
+        } else if(event.getComponentId().equals("betatestingapply-reject")) {
             event.getMessage().delete().queue();
+        } else if (event.getComponentId().equals("pingroles-news")) {
+            Role dcNewsRole = event.getGuild().getRolesByName(Main.getPingRolesNewsRoleName(), true).get(0);
+            if(!event.getMember().getRoles().contains(dcNewsRole)) {
+                event.getGuild().addRoleToMember(event.getMember(), dcNewsRole).queue();
+                event.reply("You will now receive update pings").setEphemeral(true).queue();
+            } else {
+                event.getGuild().removeRoleFromMember(event.getMember(), dcNewsRole).queue();
+                event.reply("You will no longer receive update pings").setEphemeral(true).queue();
+            }
         }
     }
 }
