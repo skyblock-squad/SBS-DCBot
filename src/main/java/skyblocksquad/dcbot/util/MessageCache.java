@@ -38,14 +38,14 @@ public class MessageCache {
             accessFile.seek(0);
             long readMessageId;
             int packLength;
-            while(true) {
+            while (true) {
                 readMessageId = accessFile.readLong();
                 packLength = accessFile.readUnsignedShort();
-                if(readMessageId == messageId) {
-                    if(packLength < 9) throw new IOException("To less bytes available to read 'authorId' and 'isBot'");
+                if (readMessageId == messageId) {
+                    if (packLength < 9) throw new IOException("To less bytes available to read 'authorId' and 'isBot'");
                     long authorId = accessFile.readLong();
                     boolean isBot = accessFile.readBoolean();
-                    byte[] encodedContent = new byte[packLength-9];
+                    byte[] encodedContent = new byte[packLength - 9];
                     accessFile.readFully(encodedContent);
                     return new CachedMessage(
                             readMessageId,
@@ -58,7 +58,7 @@ public class MessageCache {
                 }
             }
         } catch (IOException e) {
-            if(!(e instanceof EOFException)) e.printStackTrace();
+            if (!(e instanceof EOFException)) e.printStackTrace();
         }
         return null;
     }
@@ -71,18 +71,18 @@ public class MessageCache {
             accessFile.seek(0);
             long readMessageId;
             int packLength;
-            while(true) {
+            while (true) {
                 readMessageId = accessFile.readLong();
                 packLength = accessFile.readUnsignedShort();
-                if(readMessageId == messageId) {
+                if (readMessageId == messageId) {
                     long writePointer = accessFile.getFilePointer() - 8 - 2; // 8 byte (long) messageId - 2 byte (short) pack length
-                    long readPointer =  accessFile.getFilePointer() + packLength;
+                    long readPointer = accessFile.getFilePointer() + packLength;
 
                     byte[] buffer = new byte[1024];
                     int length;
-                    while(true) {
+                    while (true) {
                         accessFile.seek(readPointer);
-                        if((length = accessFile.read(buffer)) <= 0) break;
+                        if ((length = accessFile.read(buffer)) <= 0) break;
                         readPointer += length;
                         accessFile.seek(writePointer);
                         writePointer += length;
@@ -96,7 +96,7 @@ public class MessageCache {
                 }
             }
         } catch (IOException e) {
-            if(!(e instanceof EOFException)) {
+            if (!(e instanceof EOFException)) {
                 e.printStackTrace();
             }
         }

@@ -1,73 +1,20 @@
 package skyblocksquad.dcbot;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 
 import java.awt.*;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 public class SlashCommands extends ListenerAdapter {
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
-    private final Map<Long, Instant> lastExecuted = new HashMap<>();
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        if(event.getName().equals("applybetatester")) {
-            long userId = event.getUser().getIdLong();
-            Instant lastExecutedTime = getLastExecutedTime(userId);
-            Instant currentTime = Instant.now();
-            Duration duration = Duration.between(lastExecutedTime, currentTime);
-
-            String dcUsername = event.getUser().getAsTag();
-            String dcUserId = event.getUser().getId();
-            String mcUsername = event.getOption("mcusername").getAsString();
-            String reason = event.getOption("reason") == null ? "none given" : event.getOption("reason").getAsString();
-
-            if(duration.toHours() < 24) {
-                event.reply("You can only execute this command once a day to prevent spam.").setEphemeral(true).queue();
-            } else {
-
-                for(Role roles : event.getMember().getRoles()) {
-                    if(roles.getName().equalsIgnoreCase("Beta Tester")) {
-                        event.reply("You are already a beta tester.").setEphemeral(true).queue();
-                        return;
-                    }
-                }
-
-                updateLastExecutedTime(userId, currentTime);
-
-                MessageEmbed embed = new EmbedBuilder()
-                        .setTitle("Beta Tester Application")
-                        .setColor(Color.BLUE)
-                        .addField("Discord Username", dcUsername, false)
-                        .addField("Minecraft Username", mcUsername, false)
-                        .addField("Created", event.getUser().getTimeCreated().format(formatter), true)
-                        .addField("Reason", reason, false)
-                        .setFooter(dcUserId)
-                        .build();
-
-                event.getJDA().getTextChannelById(Main.getApplicationChannel())
-                        .sendMessageEmbeds(embed)
-                        .setActionRow(
-                                Button.success("betatestingapply-accept", "Accept"),
-                                Button.danger("betatestingapply-reject", "Reject")
-                        )
-                        .setSuppressedNotifications(true)
-                        .queue(message -> event.reply("Your application has been submitted").setEphemeral(true).queue());
-            }
-        } else if(event.getName().equals("sendpingroles")) {
+        if (event.getName().equals("sendpingroles")) {
             MessageEmbed embed = new EmbedBuilder()
                     .setTitle("News Ping")
                     .setColor(Color.BLUE)
@@ -80,7 +27,7 @@ public class SlashCommands extends ListenerAdapter {
                             Button.secondary("pingroles-news", "Toggle Role")
                     )
                     .queue(message -> event.reply("Ping roles selection message sent").setEphemeral(true).queue());
-        } else if(event.getName().equals("senddownloads")) {
+        } else if (event.getName().equals("senddownloads")) {
             MessageEmbed downloadsEmbed = new EmbedBuilder()
                     .setTitle("Downloads")
                     .setColor(Color.BLUE)
@@ -226,7 +173,7 @@ public class SlashCommands extends ListenerAdapter {
                     .sendMessageEmbeds(downloadsEmbed, minehuhnProjectEmbed, fireworkShow2022ProjectEmbed, mcKartProjectEmbed, blockSumoProjectEmbed, parkourWarriorProjectEmbed, liyueProjectEmbed, moonstadtProjectEmbed, fireworkShow2021ProjectEmbed, phantomProjectEmbed)
                     .queue(message -> event.reply("Downloads message sent").setEphemeral(true).queue());
             event.getChannel().sendMessageEmbeds(teleporterProjectEmbed, capsuleProjectEmbed, easterspecialProjectEmbed).queue();
-        } else if(event.getName().equals("message")) {
+        } else if (event.getName().equals("message")) {
             String message = event.getOption("message").getAsString();
 
             event.getChannel()
@@ -237,25 +184,18 @@ public class SlashCommands extends ListenerAdapter {
                         MessageEmbed embed = new EmbedBuilder()
                                 .setTitle("Bot Message Sent")
                                 .setColor(Color.BLUE)
-                                .addField("User", event.getUser().getAsMention() + "(" + event.getUser().getAsTag() + ")", false)
+                                .addField("User", event.getUser().getAsMention() + "(" + event.getUser().getName() + ")", false)
                                 .addField("Channel", event.getChannel().getAsMention() + " (" + event.getChannel().getName() + ")", false)
                                 .addField("Message", message, false)
                                 .setFooter("")
                                 .build();
 
                         TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-                        if(textChannel != null)
+                        if (textChannel != null) {
                             textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
+                        }
                     });
         }
-    }
-
-    private Instant getLastExecutedTime(long userId) {
-        return lastExecuted.getOrDefault(userId, Instant.EPOCH);
-    }
-
-    private void updateLastExecutedTime(long userId, Instant lastExecutedTime) {
-        lastExecuted.put(userId, lastExecutedTime);
     }
 
 }
