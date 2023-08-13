@@ -26,9 +26,13 @@ import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.api.events.role.update.RoleUpdateColorEvent;
 import net.dv8tion.jda.api.events.role.update.RoleUpdateNameEvent;
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent;
+import net.dv8tion.jda.api.events.user.update.UserUpdateAvatarEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateDiscriminatorEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateNameEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
+import net.dv8tion.jda.api.utils.FileUpload;
+import net.dv8tion.jda.api.utils.ImageProxy;
 import skyblocksquad.dcbot.util.CachedMessage;
 import skyblocksquad.dcbot.util.ColorUtils;
 import skyblocksquad.dcbot.util.MessageCache;
@@ -39,7 +43,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
 public class LoggingListeners extends ListenerAdapter {
-
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
         if (event.getChannel().equals(Main.getJDA().getTextChannelById(Main.getLogsChannel()))) return;
@@ -290,25 +293,26 @@ public class LoggingListeners extends ListenerAdapter {
             if (textChannel != null) {
                 textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
             }
-        } else {
-            MessageEmbed embed = new EmbedBuilder()
-                    .setTitle("Member Discriminator Change")
-                    .setThumbnail(event.getUser().getAvatarUrl())
-                    .setColor(Color.BLUE)
-                    .addField("User", event.getUser().getAsMention() + " (" + event.getUser().getName() + ")", false)
-                    .addField("Old Discriminator", event.getOldDiscriminator(), false)
-                    .addField("New Discriminator", event.getNewDiscriminator(), false)
-                    .setFooter("")
-                    .build();
+            return;
+        }
 
-            TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-            if (textChannel != null) {
-                textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-            }
+        MessageEmbed embed = new EmbedBuilder()
+                .setTitle("Member Discriminator Change")
+                .setThumbnail(event.getUser().getAvatarUrl())
+                .setColor(Color.BLUE)
+                .addField("User", event.getUser().getAsMention() + " (" + event.getUser().getName() + ")", false)
+                .addField("Old Discriminator", event.getOldDiscriminator(), false)
+                .addField("New Discriminator", event.getNewDiscriminator(), false)
+                .setFooter("")
+                .build();
+
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+        if (textChannel != null) {
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
         }
     }
 
-    /*
+
     @Override
     public void onUserUpdateAvatar(UserUpdateAvatarEvent event) {
         MessageEmbed embed = new EmbedBuilder()
@@ -319,11 +323,26 @@ public class LoggingListeners extends ListenerAdapter {
                 .setFooter("")
                 .build();
 
+        FileUpload oldImage = null;
+        if (event.getOldAvatar() != null) {
+            oldImage = downloadAvatar("oldImage.png", event.getNewAvatar());
+        }
+
+        FileUpload newImage = null;
+        if (event.getNewAvatar() != null) {
+            newImage = downloadAvatar("newImage.png", event.getNewAvatar());
+        }
+
         TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if(textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
+        if (textChannel != null) {
+            MessageCreateAction messageAction = textChannel.sendMessageEmbeds(embed);
+            if (oldImage != null) messageAction.addFiles(oldImage);
+            if (newImage != null) messageAction.addFiles(newImage);
+            messageAction.setSuppressedNotifications(Main.getLogsSilent()).queue();
+
+        }
     }
-    */
+
 
     @Override
     public void onGuildMemberRemove(GuildMemberRemoveEvent event) {
@@ -344,7 +363,7 @@ public class LoggingListeners extends ListenerAdapter {
     public void onGuildMemberRoleAdd(GuildMemberRoleAddEvent event) {
         StringBuilder rolesBuilder = new StringBuilder();
         for (Role role : event.getRoles()) {
-            rolesBuilder.append("- ").append(role.getAsMention() + " (" + role.getName() + ")").append("\n");
+            rolesBuilder.append("- ").append(role.getAsMention()).append(" (").append(role.getName()).append(")").append("\n");
         }
         String rolesList = rolesBuilder.toString();
 
@@ -366,7 +385,7 @@ public class LoggingListeners extends ListenerAdapter {
     public void onGuildMemberRoleRemove(GuildMemberRoleRemoveEvent event) {
         StringBuilder rolesBuilder = new StringBuilder();
         for (Role role : event.getRoles()) {
-            rolesBuilder.append("- ").append(role.getAsMention() + " (" + role.getName() + ")").append("\n");
+            rolesBuilder.append("- ").append(role.getAsMention()).append(" (").append(role.getName()).append(")").append("\n");
         }
         String rolesList = rolesBuilder.toString();
 
@@ -475,7 +494,7 @@ public class LoggingListeners extends ListenerAdapter {
 
     @Override
     public void onGuildInviteCreate(GuildInviteCreateEvent event) {
-        String inviteExpiration = new SimpleDateFormat("dd.MM.yyyy HH:mm").format(System.currentTimeMillis() + (event.getInvite().getMaxAge() * 1000));
+        String inviteExpiration = new SimpleDateFormat("dd.MM.yyyy HH:mm").format(System.currentTimeMillis() + (event.getInvite().getMaxAge() * 1000L));
 
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Invite Created")
@@ -547,5 +566,15 @@ public class LoggingListeners extends ListenerAdapter {
         if (textChannel != null) {
             textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
         }
+    }
+
+    private FileUpload downloadAvatar(String fileName, ImageProxy imageProxy) {
+        return FileUpload.fromStreamSupplier(fileName, () -> {
+            try {
+                return imageProxy.download().get();
+            } catch (Exception e) {
+                return null;
+            }
+        });
     }
 }

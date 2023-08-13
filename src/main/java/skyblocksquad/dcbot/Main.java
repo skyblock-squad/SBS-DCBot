@@ -19,9 +19,7 @@ import java.io.IOException;
 public class Main {
     private static JDA jda;
     private static String token;
-    private static String welcomeChannel;
-    private static String logsChannel;
-    private static String voiceLogsChannel;
+    private static String welcomeChannel, logsChannel, voiceLogsChannel;
     private static boolean logsSilent;
     private static String memberRoleName;
     private static String pingRolesNewsRoleName;

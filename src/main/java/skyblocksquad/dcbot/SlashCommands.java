@@ -11,7 +11,6 @@ import java.awt.*;
 
 
 public class SlashCommands extends ListenerAdapter {
-
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         if (event.getName().equals("sendpingroles")) {
@@ -33,6 +32,17 @@ public class SlashCommands extends ListenerAdapter {
                     .setColor(Color.BLUE)
                     .setDescription("Here you can find most of the downloads to our projects")
                     .addField("Information", "All our maps are for Minecraft JAVA only!\nAlso look at the Planet Minecraft Posts because there may be additional information.\nWe also would appreciate if you download our maps (not all have that) through the link on PM with Ad share", false)
+                    .build();
+
+            MessageEmbed blockSumoUpdatedProjectEmbed = new EmbedBuilder()
+                    .setTitle("Block Sumo")
+                    .setColor(Color.BLUE)
+                    .setThumbnail("https://static.planetminecraft.com/files/image/minecraft/project/2023/116/16979230_l.webp")
+                    .setDescription("")
+                    //.addField("Video", "<>", false)
+                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/block-sumo-minigame-updated-1-20-1>", false)
+                    .addField("MC Version", "1.20.1", false)
+                    .addField("Direct Download", "<https://static.planetminecraft.com/files/resource_media/schematic/7by-cskyblocksquad-8-unzip-me.zip>", false)
                     .build();
 
             MessageEmbed minehuhnProjectEmbed = new EmbedBuilder()
@@ -69,7 +79,7 @@ public class SlashCommands extends ListenerAdapter {
                     .build();
 
             MessageEmbed blockSumoProjectEmbed = new EmbedBuilder()
-                    .setTitle("Block Sumo")
+                    .setTitle("Block Sumo [old]")
                     .setColor(Color.BLUE)
                     .setThumbnail("https://static.planetminecraft.com/files/image/minecraft/project/2022/315/16118434-thumbnail-blocksumo_l.webp")
                     .setDescription("")
@@ -170,9 +180,9 @@ public class SlashCommands extends ListenerAdapter {
 
 
             event.getChannel()
-                    .sendMessageEmbeds(downloadsEmbed, minehuhnProjectEmbed, fireworkShow2022ProjectEmbed, mcKartProjectEmbed, blockSumoProjectEmbed, parkourWarriorProjectEmbed, liyueProjectEmbed, moonstadtProjectEmbed, fireworkShow2021ProjectEmbed, phantomProjectEmbed)
+                    .sendMessageEmbeds(downloadsEmbed, blockSumoUpdatedProjectEmbed, minehuhnProjectEmbed, fireworkShow2022ProjectEmbed, mcKartProjectEmbed, blockSumoProjectEmbed, parkourWarriorProjectEmbed, liyueProjectEmbed, moonstadtProjectEmbed, fireworkShow2021ProjectEmbed)
                     .queue(message -> event.reply("Downloads message sent").setEphemeral(true).queue());
-            event.getChannel().sendMessageEmbeds(teleporterProjectEmbed, capsuleProjectEmbed, easterspecialProjectEmbed).queue();
+            event.getChannel().sendMessageEmbeds(phantomProjectEmbed, teleporterProjectEmbed, capsuleProjectEmbed, easterspecialProjectEmbed).queue();
         } else if (event.getName().equals("message")) {
             String message = event.getOption("message").getAsString();
 
