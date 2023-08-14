@@ -12,9 +12,7 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import skyblocksquad.dcbot.util.FileHandler;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 
 public class Main {
     private static JDA jda;
@@ -69,7 +67,39 @@ public class Main {
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR))
                 .queue();
 
+        jda.upsertCommand("clear", "Remove a specified amount of messages")
+                .addOption(OptionType.INTEGER, "amount", "The amount of messages to delete", true)
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR))
+                .queue();
+
+        handleStop();
+
         System.out.println("[DC-Bot] Finished Initialization");
+    }
+
+    public static void handleStop() {
+        new Thread(() -> {
+            String line;
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            try {
+                while ((line = reader.readLine()) != null) {
+                    if (!line.equalsIgnoreCase("stop")) {
+                        System.out.println("[DC-Bot] Unknown command.");
+                        continue;
+                    }
+
+                    System.out.println("[DC-Bot] Shutting down...");
+
+                    if (jda != null) {
+                        jda.shutdown();
+                    }
+                    reader.close();
+                    System.exit(0);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     private static void createConfig(String fileName) {

@@ -1,13 +1,18 @@
 package skyblocksquad.dcbot;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class SlashCommands extends ListenerAdapter {
@@ -205,7 +210,29 @@ public class SlashCommands extends ListenerAdapter {
                             textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
                         }
                     });
+        } else if (event.getName().equals("clear")) {
+            int amount = event.getOption("amount").getAsInt();
+
+            MessageChannelUnion channel = event.getChannel();
+
+            channel.purgeMessages(getMessages(channel, amount));
+
+            event.reply("Removed " + amount + " messages.").setEphemeral(true).queue();
         }
+    }
+
+    private List<Message> getMessages(MessageChannel channel, int amount) {
+        List<Message> messages = new ArrayList<>();
+        int i = amount;
+
+        for (Message message : channel.getIterableHistory().cache(false)) {
+            if (message.isPinned()) continue;
+
+            messages.add(message);
+            if (--i <= 0) break;
+        }
+
+        return messages;
     }
 
 }
