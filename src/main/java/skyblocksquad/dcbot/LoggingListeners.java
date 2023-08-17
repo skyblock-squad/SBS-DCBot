@@ -317,7 +317,6 @@ public class LoggingListeners extends ListenerAdapter {
     public void onUserUpdateAvatar(UserUpdateAvatarEvent event) {
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Member Avatar Change")
-                .setThumbnail(event.getUser().getAvatarUrl())
                 .setColor(Color.BLUE)
                 .addField("User", event.getUser().getAsMention() + " (" + event.getUser().getName() + ")", false)
                 .setFooter("")
@@ -325,7 +324,7 @@ public class LoggingListeners extends ListenerAdapter {
 
         FileUpload oldImage = null;
         if (event.getOldAvatar() != null) {
-            oldImage = downloadAvatar("oldImage.png", event.getNewAvatar());
+            oldImage = downloadAvatar("oldImage.png", event.getOldAvatar());
         }
 
         FileUpload newImage = null;
