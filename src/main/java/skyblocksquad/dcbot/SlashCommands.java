@@ -16,6 +16,7 @@ import java.util.List;
 
 
 public class SlashCommands extends ListenerAdapter {
+
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         if (event.getName().equals("sendpingroles")) {

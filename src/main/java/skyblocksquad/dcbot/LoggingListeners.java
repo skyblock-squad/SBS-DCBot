@@ -43,6 +43,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
 public class LoggingListeners extends ListenerAdapter {
+
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
         if (event.getChannel().equals(Main.getJDA().getTextChannelById(Main.getLogsChannel()))) return;
@@ -63,7 +64,7 @@ public class LoggingListeners extends ListenerAdapter {
                 .setColor(Color.BLUE)
                 .addField("User", event.getAuthor().getAsMention() + "(" + event.getAuthor().getName() + ")", false)
                 .addField("Channel", event.getChannel().getAsMention() + " (" + event.getChannel().getName() + ")", false)
-                .addField("Old Message", cachedMessage == null ? "not cached" : cachedMessage.getContentRaw(), false)
+                .addField("Old Message", cachedMessage == null ? "not cached" : cachedMessage.contentRaw(), false)
                 .addField("New Message", event.getMessage().getContentRaw(), false)
                 .setFooter("")
                 .build();
@@ -89,7 +90,7 @@ public class LoggingListeners extends ListenerAdapter {
                     .setColor(Color.RED)
                     .addField("User", user == null ? (cachedMessage.getAuthorAsMention() + "(not cached)") : (user.getAsMention() + "(" + user.getName() + ")"), false)
                     .addField("Channel", event.getChannel().getAsMention() + " (" + event.getChannel().getName() + ")", false)
-                    .addField("Message", cachedMessage.getContentRaw(), false)
+                    .addField("Message", cachedMessage.contentRaw(), false)
                     .setFooter("")
                     .build();
 
@@ -98,7 +99,7 @@ public class LoggingListeners extends ListenerAdapter {
                 textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
         };
 
-        Main.getJDA().retrieveUserById(cachedMessage.getAuthorId()).queue(action, (throwable -> action.accept(null)));
+        Main.getJDA().retrieveUserById(cachedMessage.authorId()).queue(action, (throwable -> action.accept(null)));
     }
 
     @Override
@@ -576,4 +577,5 @@ public class LoggingListeners extends ListenerAdapter {
             }
         });
     }
+
 }

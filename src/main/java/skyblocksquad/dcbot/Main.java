@@ -12,9 +12,13 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import skyblocksquad.dcbot.util.FileHandler;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
 
 public class Main {
+
     private static JDA jda;
     private static String token;
     private static String welcomeChannel, logsChannel, voiceLogsChannel;
@@ -45,8 +49,8 @@ public class Main {
                 .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_VOICE_STATES)
                 .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
                 .setMemberCachePolicy(MemberCachePolicy.ALL)
-                .setActivity(Activity.watching("on your applications"))
-                .setStatus(OnlineStatus.ONLINE)
+                .setActivity(Activity.customStatus("Is watching youtube"))
+                .setStatus(OnlineStatus.DO_NOT_DISTURB)
                 .addEventListeners(new Listeners(), new SlashCommands(), new LoggingListeners())
                 .disableCache(CacheFlag.EMOJI, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS)
                 .build();
@@ -72,32 +76,30 @@ public class Main {
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR))
                 .queue();
 
-        handleStop();
+        handleConsole();
 
         System.out.println("[DC-Bot] Finished Initialization");
     }
 
-    public static void handleStop() {
+    private static void handleConsole() {
         new Thread(() -> {
-            String line;
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            try {
-                while ((line = reader.readLine()) != null) {
-                    if (!line.equalsIgnoreCase("stop")) {
-                        System.out.println("[DC-Bot] Unknown command.");
-                        continue;
-                    }
+            Scanner consoleScanner = new Scanner(System.in);
+            String consoleInput;
 
-                    System.out.println("[DC-Bot] Shutting down...");
-
-                    if (jda != null) {
-                        jda.shutdown();
-                    }
-                    reader.close();
-                    System.exit(0);
+            while ((consoleInput = consoleScanner.next()) != null) {
+                if (!consoleInput.equalsIgnoreCase("stop")) {
+                    System.out.println("[DC-Bot] Unknown command.");
+                    continue;
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+
+                System.out.println("[DC-Bot] Shutting down...");
+
+                if (jda != null) {
+                    jda.shutdown();
+                }
+
+                consoleScanner.close();
+                System.exit(0);
             }
         }).start();
     }
@@ -143,4 +145,5 @@ public class Main {
     public static String getPingRolesNewsRoleName() {
         return pingRolesNewsRoleName;
     }
+
 }

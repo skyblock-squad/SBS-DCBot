@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 public class FileHandler {
+
     private final Map<String, String> config;
 
     public FileHandler(String fileName) {
@@ -100,4 +101,5 @@ public class FileHandler {
 
         return yamlData;
     }
+
 }

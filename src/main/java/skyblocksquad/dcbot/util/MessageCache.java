@@ -7,7 +7,6 @@ import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 
 public class MessageCache {
-
     private static final RandomAccessFile accessFile;
 
     static {
@@ -21,11 +20,11 @@ public class MessageCache {
     public static synchronized void addMessage(CachedMessage cachedMessage) {
         //String line = String.format("%s;%s;%s;%s", cachedMessage.getMessageId(), cachedMessage.getContentRaw(), cachedMessage.getAuthorTag(), cachedMessage.isBot());
         try {
-            byte[] encodedContent = cachedMessage.getContentRaw().getBytes(StandardCharsets.UTF_8);
+            byte[] encodedContent = cachedMessage.contentRaw().getBytes(StandardCharsets.UTF_8);
             accessFile.seek(accessFile.length());
-            accessFile.writeLong(cachedMessage.getMessageId());
+            accessFile.writeLong(cachedMessage.messageId());
             accessFile.writeShort(8 + 1 + encodedContent.length);
-            accessFile.writeLong(cachedMessage.getAuthorId());
+            accessFile.writeLong(cachedMessage.authorId());
             accessFile.writeBoolean(cachedMessage.isBot());
             accessFile.write(encodedContent);
         } catch (IOException e) {
