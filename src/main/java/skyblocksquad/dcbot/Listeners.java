@@ -12,18 +12,18 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import java.awt.*;
 
 public class Listeners extends ListenerAdapter {
+
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
         MessageEmbed embed = new EmbedBuilder()
                 .setColor(Color.CYAN)
-                .setDescription(event.getUser().getAsMention())
                 .setImage(event.getUser().getAvatarUrl())
                 .setFooter("We're happy to meet you!")
                 .build();
 
         TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getWelcomeChannel());
         if (textChannel != null)
-            textChannel.sendMessage("Welcome " + event.getUser().getName() + " to the Skyblock Squad Discord server").setEmbeds(embed).queue();
+            textChannel.sendMessage("Welcome " + event.getUser().getAsMention() + " to the Skyblock Squad Discord server").setEmbeds(embed).queue();
         Role memberRole = event.getGuild().getRolesByName(Main.getMemberRoleName(), true).get(0);
         event.getGuild().addRoleToMember(event.getMember(), memberRole).queue();
     }
@@ -46,4 +46,5 @@ public class Listeners extends ListenerAdapter {
             }
         }
     }
+
 }
