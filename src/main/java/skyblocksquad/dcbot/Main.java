@@ -10,48 +10,33 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import skyblocksquad.dcbot.util.FileHandler;
+import skyblocksquad.dcbot.config.main.Config;
+import skyblocksquad.dcbot.listeners.GeneralListeners;
+import skyblocksquad.dcbot.listeners.LoggingListeners;
+import skyblocksquad.dcbot.util.LoggingFormat;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Scanner;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Logger;
 
 public class Main {
 
+    private static Logger logger;
+    private static final Config config = new Config();
     private static JDA jda;
-    private static String token;
-    private static String welcomeChannel, logsChannel, voiceLogsChannel;
-    private static boolean logsSilent;
-    private static String memberRoleName;
-    private static String pingRolesNewsRoleName;
 
     public static void main(String[] args) {
-        String configFileName = "config.yml";
-        File configFile = new File("config.yml");
+        loadLogger();
 
-        if (!configFile.exists()) {
-            createConfig(configFileName);
-            System.out.println("Config created. Set the variables and run the bot again.");
-            System.exit(0);
-        }
+        config.load();
 
-        FileHandler configHandler = new FileHandler(configFileName);
-        token = configHandler.getString("botToken");
-        welcomeChannel = configHandler.getString("welcomeChannelId");
-        logsChannel = configHandler.getString("logsChannelId");
-        voiceLogsChannel = configHandler.getString("voiceLogsChannelId");
-        logsSilent = configHandler.getBoolean("logsSilent");
-        memberRoleName = configHandler.getString("MemberRole");
-        pingRolesNewsRoleName = configHandler.getString("PingRolesNewsRole");
-
-        jda = JDABuilder.createDefault(token)
+        jda = JDABuilder.createDefault(config.getBotToken())
                 .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_VOICE_STATES)
                 .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
                 .setMemberCachePolicy(MemberCachePolicy.ALL)
                 .setActivity(Activity.customStatus("Is watching youtube"))
                 .setStatus(OnlineStatus.DO_NOT_DISTURB)
-                .addEventListeners(new Listeners(), new SlashCommands(), new LoggingListeners())
+                .addEventListeners(new GeneralListeners(), new SlashCommands(), new LoggingListeners())
                 .disableCache(CacheFlag.EMOJI, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS)
                 .build();
 
@@ -78,7 +63,16 @@ public class Main {
 
         handleConsole();
 
-        System.out.println("[DC-Bot] Finished Initialization");
+        logger.info("Initialized");
+    }
+
+    private static void loadLogger() {
+        logger = Logger.getLogger("SBS-DCBot");
+        logger.setUseParentHandlers(false);
+
+        ConsoleHandler handler = new ConsoleHandler();
+        handler.setFormatter(new LoggingFormat());
+        logger.addHandler(handler);
     }
 
     private static void handleConsole() {
@@ -88,15 +82,14 @@ public class Main {
 
             while ((consoleInput = consoleScanner.next()) != null) {
                 if (!consoleInput.equalsIgnoreCase("stop")) {
-                    System.out.println("[DC-Bot] Unknown command.");
+                    logger.info("Unknown command.");
                     continue;
                 }
 
-                System.out.println("[DC-Bot] Shutting down...");
+                logger.info("Shutting down...");
 
-                if (jda != null) {
+                if (jda != null)
                     jda.shutdown();
-                }
 
                 consoleScanner.close();
                 System.exit(0);
@@ -104,46 +97,16 @@ public class Main {
         }).start();
     }
 
-    private static void createConfig(String fileName) {
-        try (FileWriter fileWriter = new FileWriter(fileName)) {
-            fileWriter.write("botToken: DISCORD_BOT_TOKEN\n");
-            fileWriter.write("welcomeChannelId: WELCOME_CHANNEL_ID\n");
-            fileWriter.write("logsChannelId: LOGS_CHANNEL_ID\n");
-            fileWriter.write("voiceLogsChannelId: VOICE_LOGS_CHANNEL_ID\n");
-            fileWriter.write("logsSilent: true\n");
-            fileWriter.write("MemberRole: Member\n");
-            fileWriter.write("PingRolesNewsRole: null\n");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public static Logger getLogger() {
+        return logger;
+    }
+
+    public static Config getConfig() {
+        return config;
     }
 
     public static JDA getJDA() {
         return jda;
-    }
-
-    public static String getWelcomeChannel() {
-        return welcomeChannel;
-    }
-
-    public static String getLogsChannel() {
-        return logsChannel;
-    }
-
-    public static String getVoiceLogsChannel() {
-        return voiceLogsChannel;
-    }
-
-    public static boolean getLogsSilent() {
-        return logsSilent;
-    }
-
-    public static String getMemberRoleName() {
-        return memberRoleName;
-    }
-
-    public static String getPingRolesNewsRoleName() {
-        return pingRolesNewsRoleName;
     }
 
 }

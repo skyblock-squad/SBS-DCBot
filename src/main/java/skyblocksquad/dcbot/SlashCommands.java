@@ -11,8 +11,9 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 public class SlashCommands extends ListenerAdapter {
@@ -206,9 +207,9 @@ public class SlashCommands extends ListenerAdapter {
                                 .setFooter("")
                                 .build();
 
-                        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+                        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
                         if (textChannel != null) {
-                            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
+                            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
                         }
                     });
         } else if (event.getName().equals("clear")) {
@@ -216,24 +217,20 @@ public class SlashCommands extends ListenerAdapter {
 
             MessageChannelUnion channel = event.getChannel();
 
-            channel.purgeMessages(getMessages(channel, amount));
-
-            event.reply("Removed " + amount + " messages.").setEphemeral(true).queue();
+            event.reply("Removing messages...").setEphemeral(true).queue(interactionHook ->
+                    getMessagesAsync(channel, amount, messages ->
+                            interactionHook.editOriginal("Removed " + channel.purgeMessages(messages).size() + " messages.").queue())
+            );
         }
     }
 
-    private List<Message> getMessages(MessageChannel channel, int amount) {
-        List<Message> messages = new ArrayList<>();
-        int i = amount;
-
-        for (Message message : channel.getIterableHistory().cache(false)) {
-            if (message.isPinned()) continue;
-
-            messages.add(message);
-            if (--i <= 0) break;
-        }
-
-        return messages;
+    private void getMessagesAsync(MessageChannel channel, int amount, Consumer<List<Message>> callback) {
+        channel.getIterableHistory().takeAsync(amount).thenAccept(messages -> {
+            List<Message> filteredMessages = messages.stream()
+                    .filter(m -> !m.isPinned())
+                    .collect(Collectors.toList());
+            callback.accept(filteredMessages);
+        });
     }
 
 }

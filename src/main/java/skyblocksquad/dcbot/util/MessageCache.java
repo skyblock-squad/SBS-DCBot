@@ -7,6 +7,7 @@ import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 
 public class MessageCache {
+
     private static final RandomAccessFile accessFile;
 
     static {
@@ -100,4 +101,5 @@ public class MessageCache {
             }
         }
     }
+
 }

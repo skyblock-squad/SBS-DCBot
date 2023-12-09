@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot;
+package skyblocksquad.dcbot.listeners;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -33,20 +33,21 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.ImageProxy;
+import skyblocksquad.dcbot.Main;
 import skyblocksquad.dcbot.util.CachedMessage;
 import skyblocksquad.dcbot.util.ColorUtils;
 import skyblocksquad.dcbot.util.MessageCache;
+import skyblocksquad.dcbot.util.TimeUtils;
 
 import java.awt.*;
 import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
 public class LoggingListeners extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
-        if (event.getChannel().equals(Main.getJDA().getTextChannelById(Main.getLogsChannel()))) return;
+        if (event.getChannel().equals(Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId()))) return;
         if (event.getAuthor().isBot()) return;
 
         MessageCache.addMessage(new CachedMessage(event.getMessageIdLong(), event.getAuthor().getIdLong(), false, event.getMessage().getContentRaw()));
@@ -54,7 +55,7 @@ public class LoggingListeners extends ListenerAdapter {
 
     @Override
     public void onMessageUpdate(MessageUpdateEvent event) {
-        if (event.getChannel().equals(Main.getJDA().getTextChannelById(Main.getLogsChannel()))) return;
+        if (event.getChannel().equals(Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId()))) return;
         if (event.getAuthor().isBot()) return;
 
         CachedMessage cachedMessage = MessageCache.getMessage(event.getMessageIdLong());
@@ -66,20 +67,18 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("Channel", event.getChannel().getAsMention() + " (" + event.getChannel().getName() + ")", false)
                 .addField("Old Message", cachedMessage == null ? "not cached" : cachedMessage.contentRaw(), false)
                 .addField("New Message", event.getMessage().getContentRaw(), false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
         MessageCache.removeMessage(event.getMessageIdLong());
         MessageCache.addMessage(new CachedMessage(event.getMessageIdLong(), event.getAuthor().getIdLong(), event.getAuthor().isBot(), event.getMessage().getContentRaw()));
     }
 
     @Override
     public void onMessageDelete(MessageDeleteEvent event) {
-        if (event.getChannel().equals(Main.getJDA().getTextChannelById(Main.getLogsChannel()))) return;
+        if (event.getChannel().equals(Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId()))) return;
         final CachedMessage cachedMessage = MessageCache.getMessage(event.getMessageIdLong());
         MessageCache.removeMessage(event.getMessageIdLong());
         if (cachedMessage == null || cachedMessage.isBot()) return;
@@ -91,12 +90,11 @@ public class LoggingListeners extends ListenerAdapter {
                     .addField("User", user == null ? (cachedMessage.getAuthorAsMention() + "(not cached)") : (user.getAsMention() + "(" + user.getName() + ")"), false)
                     .addField("Channel", event.getChannel().getAsMention() + " (" + event.getChannel().getName() + ")", false)
                     .addField("Message", cachedMessage.contentRaw(), false)
-                    .setFooter("")
                     .build();
 
-            TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+            TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
             if (textChannel != null)
-                textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
+                textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
         };
 
         Main.getJDA().retrieveUserById(cachedMessage.authorId()).queue(action, (throwable -> action.accept(null)));
@@ -106,8 +104,7 @@ public class LoggingListeners extends ListenerAdapter {
     public void onChannelCreate(ChannelCreateEvent event) {
         ChannelType type = event.getChannel().getType();
         EmbedBuilder embedBuilder = new EmbedBuilder()
-                .setColor(Color.GREEN)
-                .setFooter("");
+                .setColor(Color.GREEN);
 
         switch (type) {
             case CATEGORY -> {
@@ -156,17 +153,16 @@ public class LoggingListeners extends ListenerAdapter {
             }
         }
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
         if (textChannel != null)
-            textChannel.sendMessageEmbeds(embedBuilder.build()).setSuppressedNotifications(Main.getLogsSilent()).queue();
+            textChannel.sendMessageEmbeds(embedBuilder.build()).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
     public void onChannelDelete(ChannelDeleteEvent event) {
         ChannelType type = event.getChannel().getType();
         EmbedBuilder embedBuilder = new EmbedBuilder()
-                .setColor(Color.RED)
-                .setFooter("");
+                .setColor(Color.RED);
 
         switch (type) {
             case CATEGORY -> {
@@ -215,27 +211,23 @@ public class LoggingListeners extends ListenerAdapter {
             }
         }
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
         if (textChannel != null)
-            textChannel.sendMessageEmbeds(embedBuilder.build()).setSuppressedNotifications(Main.getLogsSilent()).queue();
+            textChannel.sendMessageEmbeds(embedBuilder.build()).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
-        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
-
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Member Joined")
                 .setColor(Color.GREEN)
                 .addField("User", event.getMember().getAsMention() + " (" + event.getMember().getUser().getName() + ")", false)
-                .addField("Created", event.getUser().getTimeCreated().format(formatter), true)
-                .setFooter("")
+                .addField("Created", event.getUser().getTimeCreated().format(TimeUtils.getDcLoggingFormatter()), true)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -247,13 +239,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("User", event.getUser().getAsMention() + " (" + event.getUser().getName() + ")", false)
                 .addField("Old Name", event.getOldName(), false)
                 .addField("New Name", event.getNewName(), false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -264,13 +254,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("User", event.getUser().getAsMention() + " (" + event.getUser().getName() + ")", false)
                 .addField("Old Nick", event.getOldNickname() != null ? event.getOldNickname() : event.getUser().getName() + "(Username)", false)
                 .addField("New Nick", event.getNewNickname() != null ? event.getNewNickname() : event.getUser().getName() + "(Username)", false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -287,13 +275,11 @@ public class LoggingListeners extends ListenerAdapter {
                     .setColor(Color.BLUE)
                     .addField("User", event.getUser().getAsMention() + " (" + event.getUser().getName() + ")", false)
                     .addField("Old Discriminator", event.getOldDiscriminator(), false)
-                    .setFooter("")
                     .build();
 
-            TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-            if (textChannel != null) {
-                textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-            }
+            TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+            if (textChannel != null)
+                textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
             return;
         }
 
@@ -304,13 +290,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("User", event.getUser().getAsMention() + " (" + event.getUser().getName() + ")", false)
                 .addField("Old Discriminator", event.getOldDiscriminator(), false)
                 .addField("New Discriminator", event.getNewDiscriminator(), false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
 
@@ -320,26 +304,22 @@ public class LoggingListeners extends ListenerAdapter {
                 .setTitle("Member Avatar Change")
                 .setColor(Color.BLUE)
                 .addField("User", event.getUser().getAsMention() + " (" + event.getUser().getName() + ")", false)
-                .setFooter("")
                 .build();
 
         FileUpload oldImage = null;
-        if (event.getOldAvatar() != null) {
+        if (event.getOldAvatar() != null)
             oldImage = downloadAvatar("oldImage.png", event.getOldAvatar());
-        }
 
         FileUpload newImage = null;
-        if (event.getNewAvatar() != null) {
+        if (event.getNewAvatar() != null)
             newImage = downloadAvatar("newImage.png", event.getNewAvatar());
-        }
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
         if (textChannel != null) {
             MessageCreateAction messageAction = textChannel.sendMessageEmbeds(embed);
             if (oldImage != null) messageAction.addFiles(oldImage);
             if (newImage != null) messageAction.addFiles(newImage);
-            messageAction.setSuppressedNotifications(Main.getLogsSilent()).queue();
-
+            messageAction.setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
         }
     }
 
@@ -350,13 +330,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .setTitle("Member Left")
                 .setColor(Color.RED)
                 .addField("User", "<@" + event.getUser().getId() + ">" + " (" + event.getUser().getName() + ")", false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -372,13 +350,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .setColor(Color.BLUE)
                 .addField("User", event.getMember().getAsMention() + " (" + event.getUser().getName() + ")", false)
                 .addField("Roles added", rolesList, false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -394,13 +370,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .setColor(Color.BLUE)
                 .addField("User", event.getMember().getAsMention() + " (" + event.getUser().getName() + ")", false)
                 .addField("Roles removed", rolesList, false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -409,13 +383,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .setTitle("Role Created")
                 .setColor(Color.GREEN)
                 .addField("Role", event.getRole().getAsMention() + " (" + event.getRole().getName() + ")", false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -424,13 +396,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .setTitle("Role Deleted")
                 .setColor(Color.RED)
                 .addField("Role", event.getRole().getAsMention() + " (" + event.getRole().getName() + ")", false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -441,13 +411,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("Role", event.getRole().getAsMention(), false)
                 .addField("Old Name", event.getOldValue(), false)
                 .addField("New Name", event.getNewValue(), false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -461,13 +429,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("Role", event.getRole().getAsMention() + " (" + event.getRole().getName() + ")", false)
                 .addField("Old Color", oldColorName + " (" + event.getOldValue() + ")", false)
                 .addField("New Color", newColorName + " (" + event.getNewValue() + ")", false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -483,13 +449,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .setColor(Color.BLUE)
                 .addField("Role", event.getRole().getAsMention() + " (" + event.getRole().getName() + ")", false)
                 .addField("Permissions", permissionsList, false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -504,13 +468,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("Channel", event.getInvite().getChannel() != null ? event.getInvite().getChannel().getName() : "Could not get channel", false)
                 .addField("Expiration", event.getInvite().getMaxAge() != 0 ? inviteExpiration : "never", false)
                 .addField("Max Uses", event.getInvite().getMaxUses() != 0 ? String.valueOf(event.getInvite().getMaxUses()) : "∞", false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -533,9 +495,9 @@ public class LoggingListeners extends ListenerAdapter {
             embedBuilder.addField("Channel", event.getChannelJoined().getAsMention() + " (" + event.getChannelJoined().getName() + ")", false);
         } else return;
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getVoiceLogsChannel());
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getVoiceLogsChannelId());
         if (textChannel != null)
-            textChannel.sendMessageEmbeds(embedBuilder.build()).setSuppressedNotifications(Main.getLogsSilent()).queue();
+            textChannel.sendMessageEmbeds(embedBuilder.build()).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -544,13 +506,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .setTitle("Voice: User " + (event.isGuildMuted() ? "muted" : "unmuted"))
                 .setColor(Color.BLUE)
                 .addField("User", event.getMember().getAsMention() + " (" + event.getMember().getUser().getName() + ")", false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getVoiceLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getVoiceLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     @Override
@@ -559,13 +519,11 @@ public class LoggingListeners extends ListenerAdapter {
                 .setTitle("Voice: User " + (event.isGuildDeafened() ? "deafened" : "undeafened"))
                 .setColor(Color.BLUE)
                 .addField("User", event.getMember().getAsMention() + " (" + event.getMember().getUser().getName() + ")", false)
-                .setFooter("")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getVoiceLogsChannel());
-        if (textChannel != null) {
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getLogsSilent()).queue();
-        }
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getVoiceLogsChannelId());
+        if (textChannel != null)
+            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
     }
 
     private FileUpload downloadAvatar(String fileName, ImageProxy imageProxy) {

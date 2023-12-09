@@ -1,0 +1,9 @@
+{
+  "botToken": "DISCORD_BOT_TOKEN",
+  "welcomeChannelId": 0,
+  "logsChannelId": 0,
+  "voiceLogsChannelId": 0,
+  "memberRoleId": 0,
+  "pingRolesNewsPingRoleId": 0,
+  "silentLogMessages": true
+}

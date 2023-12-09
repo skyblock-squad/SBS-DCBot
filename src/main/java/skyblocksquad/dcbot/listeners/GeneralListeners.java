@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot;
+package skyblocksquad.dcbot.listeners;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -8,10 +8,11 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import skyblocksquad.dcbot.Main;
 
 import java.awt.*;
 
-public class Listeners extends ListenerAdapter {
+public class GeneralListeners extends ListenerAdapter {
 
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
@@ -21,10 +22,10 @@ public class Listeners extends ListenerAdapter {
                 .setFooter("We're happy to meet you!")
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getWelcomeChannel());
+        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getWelcomeChannelId());
         if (textChannel != null)
             textChannel.sendMessage("Welcome " + event.getUser().getAsMention() + " to the Skyblock Squad Discord server").setEmbeds(embed).queue();
-        Role memberRole = event.getGuild().getRolesByName(Main.getMemberRoleName(), true).get(0);
+        Role memberRole = event.getGuild().getRoleById(Main.getConfig().getMemberRoleId());
         event.getGuild().addRoleToMember(event.getMember(), memberRole).queue();
     }
 
@@ -36,7 +37,7 @@ public class Listeners extends ListenerAdapter {
         }
 
         if (event.getComponentId().equals("pingroles-news")) {
-            Role dcNewsRole = event.getGuild().getRolesByName(Main.getPingRolesNewsRoleName(), true).get(0);
+            Role dcNewsRole = event.getGuild().getRoleById(Main.getConfig().getPingRolesNewsPingRoleId());
             if (!event.getMember().getRoles().contains(dcNewsRole)) {
                 event.getGuild().addRoleToMember(event.getMember(), dcNewsRole).queue();
                 event.reply("You will now receive update pings").setEphemeral(true).queue();
