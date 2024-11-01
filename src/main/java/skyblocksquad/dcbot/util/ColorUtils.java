@@ -6,7 +6,7 @@ import java.awt.*;
  * Java Code to get a color name from rgb/hex value/awt color
  * <p>
  * The part of looking up a color name from the rgb values is edited from
- * https://gist.github.com/nightlark/6482130#file-gistfile1-java (that has some errors) by Ryan Mast (nightlark)
+ * <a href="https://gist.github.com/nightlark/6482130#file-gistfile1-java"></a> (that has some errors) by Ryan Mast (nightlark)
  *
  * @author Xiaoxiao Li
  */
@@ -213,6 +213,7 @@ public class ColorUtils {
      * @author Xiaoxiao Li
      */
     private static class ColorName {
+
         public int r, g, b;
         public String name;
 
@@ -243,5 +244,7 @@ public class ColorUtils {
         public String getName() {
             return name;
         }
+
     }
+
 }

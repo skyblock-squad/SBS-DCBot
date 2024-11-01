@@ -2,13 +2,13 @@ package skyblocksquad.dcbot.listeners;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.channel.ChannelCreateEvent;
 import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent;
+import net.dv8tion.jda.api.events.channel.update.GenericChannelUpdateEvent;
 import net.dv8tion.jda.api.events.guild.invite.GuildInviteCreateEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
@@ -29,10 +29,11 @@ import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateAvatarEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateDiscriminatorEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateNameEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.hooks.SubscribeEvent;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.ImageProxy;
+import org.jetbrains.annotations.Nullable;
 import skyblocksquad.dcbot.Main;
 import skyblocksquad.dcbot.util.CachedMessage;
 import skyblocksquad.dcbot.util.ColorUtils;
@@ -41,21 +42,59 @@ import skyblocksquad.dcbot.util.TimeUtils;
 
 import java.awt.*;
 import java.text.SimpleDateFormat;
-import java.util.function.Consumer;
 
-public class LoggingListeners extends ListenerAdapter {
+public class LoggingListeners {
 
-    @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
-        if (event.getChannel().equals(Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId()))) return;
+    private static @Nullable MessageCreateAction buildLogMessage(TextChannel channel, MessageEmbed embed, MessageEmbed... embeds) {
+        if (channel == null) return null;
+
+        return channel.sendMessageEmbeds(embed, embeds)
+                .setSuppressedNotifications(Main.getConfig().isSilentLogMessages());
+    }
+
+    public static String getHexStringFromRawRgb(int rawRgb) {
+        int red = (rawRgb >> 16) & 0xFF;
+        int green = (rawRgb >> 8) & 0xFF;
+        int blue = rawRgb & 0xFF;
+
+        return String.format("#%02x%02x%02x", red, green, blue);
+    }
+
+    private static FileUpload downloadAvatar(String fileName, ImageProxy imageProxy) {
+        return FileUpload.fromStreamSupplier(fileName, () -> {
+            try {
+                return imageProxy.download().get();
+            } catch (Exception e) {
+                return null;
+            }
+        });
+    }
+
+    private final Guild guild;
+    private final @Nullable TextChannel logChannel;
+    private final @Nullable TextChannel voiceLogChannel;
+
+    public LoggingListeners(Guild guild) {
+        this.guild = guild;
+        logChannel = Main.getConfig().getLogsChannelId() == 0 ? null :
+                guild.getTextChannelById(Main.getConfig().getLogsChannelId());
+        voiceLogChannel = Main.getConfig().getVoiceLogsChannelId() == 0 ? null :
+                guild.getTextChannelById(Main.getConfig().getVoiceLogsChannelId());
+    }
+
+    @SubscribeEvent
+    public void storeIncomingMessage(MessageReceivedEvent event) {
+        if (!event.isFromGuild() || !event.getGuild().equals(guild)) return;
+        if (event.getChannel().equals(logChannel)) return;
         if (event.getAuthor().isBot()) return;
 
         MessageCache.addMessage(new CachedMessage(event.getMessageIdLong(), event.getAuthor().getIdLong(), false, event.getMessage().getContentRaw()));
     }
 
-    @Override
-    public void onMessageUpdate(MessageUpdateEvent event) {
-        if (event.getChannel().equals(Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId()))) return;
+    @SubscribeEvent
+    public void logMessageEdit(MessageUpdateEvent event) {
+        if (!event.isFromGuild() || !event.getGuild().equals(guild)) return;
+        if (event.getChannel().equals(logChannel)) return;
         if (event.getAuthor().isBot()) return;
 
         CachedMessage cachedMessage = MessageCache.getMessage(event.getMessageIdLong());
@@ -66,172 +105,174 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("User", event.getAuthor().getAsMention() + "(" + event.getAuthor().getName() + ")", false)
                 .addField("Channel", event.getChannel().getAsMention() + " (" + event.getChannel().getName() + ")", false)
                 .addField("Old Message", cachedMessage == null ? "not cached" : cachedMessage.contentRaw(), false)
-                .addField("New Message", event.getMessage().getContentRaw(), false)
+                .addField("New Message", "[" + event.getMessage().getContentRaw() + "](" + event.getMessage().getJumpUrl() + ")", false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
         MessageCache.removeMessage(event.getMessageIdLong());
         MessageCache.addMessage(new CachedMessage(event.getMessageIdLong(), event.getAuthor().getIdLong(), event.getAuthor().isBot(), event.getMessage().getContentRaw()));
     }
 
-    @Override
-    public void onMessageDelete(MessageDeleteEvent event) {
-        if (event.getChannel().equals(Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId()))) return;
+    @SubscribeEvent
+    public void logMessageDeletion(MessageDeleteEvent event) {
+        if (!event.isFromGuild() || !event.getGuild().equals(guild)) return;
+        if (event.getChannel().equals(logChannel)) return;
         final CachedMessage cachedMessage = MessageCache.getMessage(event.getMessageIdLong());
         MessageCache.removeMessage(event.getMessageIdLong());
         if (cachedMessage == null || cachedMessage.isBot()) return;
 
-        final Consumer<User> action = (user) -> {
-            MessageEmbed embed = new EmbedBuilder()
-                    .setTitle("Message Deleted")
-                    .setColor(Color.RED)
-                    .addField("User", user == null ? (cachedMessage.getAuthorAsMention() + "(not cached)") : (user.getAsMention() + "(" + user.getName() + ")"), false)
-                    .addField("Channel", event.getChannel().getAsMention() + " (" + event.getChannel().getName() + ")", false)
-                    .addField("Message", cachedMessage.contentRaw(), false)
-                    .build();
+        EmbedBuilder embedBuilder = new EmbedBuilder()
+                .setTitle("Message Deleted")
+                .setColor(Color.RED)
+                .addField("Channel", event.getChannel().getAsMention() + " (" + event.getChannel().getName() + ")", false)
+                .addField("Message", cachedMessage.contentRaw(), false);
 
-            TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-            if (textChannel != null)
-                textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
-        };
-
-        Main.getJDA().retrieveUserById(cachedMessage.authorId()).queue(action, (throwable -> action.accept(null)));
+        event.getJDA().retrieveUserById(cachedMessage.authorId()).queue(
+                user -> {
+                    embedBuilder.getFields().add(0,
+                            new MessageEmbed.Field("User", user.getAsMention() + " (" + user.getName() + ")", false));
+                    sendLogMessage(embedBuilder.build());
+                },
+                throwable -> {
+                    embedBuilder.getFields().add(0,
+                            new MessageEmbed.Field("User", cachedMessage.getAuthorAsMention() + " (not cached)", false));
+                    sendLogMessage(embedBuilder.build());
+                }
+        );
     }
 
-    @Override
-    public void onChannelCreate(ChannelCreateEvent event) {
-        ChannelType type = event.getChannel().getType();
+    @SubscribeEvent
+    public void logChannelCreation(ChannelCreateEvent event) {
+        if (!event.isFromGuild() || !event.getGuild().equals(guild)) return;
         EmbedBuilder embedBuilder = new EmbedBuilder()
                 .setColor(Color.GREEN);
 
-        switch (type) {
-            case CATEGORY -> {
-                embedBuilder.setTitle("Category Created");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-            }
-            case GUILD_PUBLIC_THREAD -> {
-                embedBuilder.setTitle("Thread Created");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Public", false);
-            }
-            case GUILD_PRIVATE_THREAD -> {
-                embedBuilder.setTitle("Thread Created");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Private", false);
-            }
-            case TEXT -> {
-                embedBuilder.setTitle("Channel Created");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Text Channel", false);
-            }
-            case VOICE -> {
-                embedBuilder.setTitle("Channel Created");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Voice Channel", false);
-            }
-            case NEWS -> {
-                embedBuilder.setTitle("Channel Created");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "News Channel", false);
-            }
-            case FORUM -> {
-                embedBuilder.setTitle("Channel Created");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Forum Channel", false);
-            }
-            case STAGE -> {
-                embedBuilder.setTitle("Channel Created");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Stage Channel", false);
-            }
-            default -> {
-                embedBuilder.setTitle("Channel Created");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "unknown", false);
-            }
+        switch (event.getChannel().getType()) {
+            case CATEGORY -> embedBuilder.setTitle("Category Created")
+                    .addField("Name", event.getChannel().getName(), false);
+            case GUILD_PUBLIC_THREAD -> embedBuilder.setTitle("Thread Created")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Public", false);
+            case GUILD_PRIVATE_THREAD -> embedBuilder.setTitle("Thread Created")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Private", false);
+            case TEXT -> embedBuilder.setTitle("Channel Created")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Text Channel", false);
+            case VOICE -> embedBuilder.setTitle("Channel Created")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Voice Channel", false);
+            case NEWS -> embedBuilder.setTitle("Channel Created")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "News Channel", false);
+            case FORUM -> embedBuilder.setTitle("Channel Created")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Forum Channel", false);
+            case STAGE -> embedBuilder.setTitle("Channel Created")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Stage Channel", false);
+            default -> embedBuilder.setTitle("Channel Created")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "unknown", false);
         }
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embedBuilder.build()).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embedBuilder.build());
     }
 
-    @Override
-    public void onChannelDelete(ChannelDeleteEvent event) {
-        ChannelType type = event.getChannel().getType();
+    @SubscribeEvent
+    public void logChannelUpdate(GenericChannelUpdateEvent<?> event) {
+        if (!event.isFromGuild() || !event.getGuild().equals(guild)) return;
+        EmbedBuilder embedBuilder = new EmbedBuilder()
+                .setColor(Color.BLUE);
+
+        switch (event.getChannel().getType()) {
+            case CATEGORY -> embedBuilder.setTitle("Category Updated")
+                    .addField("Name", event.getChannel().getName(), false);
+            case GUILD_PUBLIC_THREAD -> embedBuilder.setTitle("Thread Updated")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Public", false);
+            case GUILD_PRIVATE_THREAD -> embedBuilder.setTitle("Thread Updated")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Private", false);
+            case TEXT -> embedBuilder.setTitle("Channel Updated")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Text Channel", false);
+            case VOICE -> embedBuilder.setTitle("Channel Updated")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Voice Channel", false);
+            case NEWS -> embedBuilder.setTitle("Channel Updated")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "News Channel", false);
+            case FORUM -> embedBuilder.setTitle("Channel Updated")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Forum Channel", false);
+            case STAGE -> embedBuilder.setTitle("Channel Updated")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Stage Channel", false);
+            default -> embedBuilder.setTitle("Channel Updated")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "unknown", false);
+        }
+
+        embedBuilder.addField("Updated", event.getPropertyIdentifier(), false);
+
+        sendLogMessage(embedBuilder.build());
+    }
+
+    @SubscribeEvent
+    public void logChannelDeletion(ChannelDeleteEvent event) {
+        if (!event.isFromGuild() || !event.getGuild().equals(guild)) return;
         EmbedBuilder embedBuilder = new EmbedBuilder()
                 .setColor(Color.RED);
 
-        switch (type) {
-            case CATEGORY -> {
-                embedBuilder.setTitle("Category Deleted");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-            }
-            case GUILD_PUBLIC_THREAD -> {
-                embedBuilder.setTitle("Thread Deleted");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Public", false);
-            }
-            case GUILD_PRIVATE_THREAD -> {
-                embedBuilder.setTitle("Thread Deleted");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Private", false);
-            }
-            case TEXT -> {
-                embedBuilder.setTitle("Channel Deleted");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Text Channel", false);
-            }
-            case VOICE -> {
-                embedBuilder.setTitle("Channel Deleted");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Voice Channel", false);
-            }
-            case NEWS -> {
-                embedBuilder.setTitle("Channel Deleted");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "News Channel", false);
-            }
-            case FORUM -> {
-                embedBuilder.setTitle("Channel Deleted");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Forum Channel", false);
-            }
-            case STAGE -> {
-                embedBuilder.setTitle("Channel Deleted");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "Stage Channel", false);
-            }
-            default -> {
-                embedBuilder.setTitle("Channel Deleted");
-                embedBuilder.addField("Name", event.getChannel().getName(), false);
-                embedBuilder.addField("Type", "unknown", false);
-            }
+        switch (event.getChannel().getType()) {
+            case CATEGORY -> embedBuilder.setTitle("Category Deleted")
+                    .addField("Name", event.getChannel().getName(), false);
+            case GUILD_PUBLIC_THREAD -> embedBuilder.setTitle("Thread Deleted")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Public", false);
+            case GUILD_PRIVATE_THREAD -> embedBuilder.setTitle("Thread Deleted")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Private", false);
+            case TEXT -> embedBuilder.setTitle("Channel Deleted")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Text Channel", false);
+            case VOICE -> embedBuilder.setTitle("Channel Deleted")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Voice Channel", false);
+            case NEWS -> embedBuilder.setTitle("Channel Deleted")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "News Channel", false);
+            case FORUM -> embedBuilder.setTitle("Channel Deleted")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Forum Channel", false);
+            case STAGE -> embedBuilder.setTitle("Channel Deleted")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "Stage Channel", false);
+            default -> embedBuilder.setTitle("Channel Deleted")
+                    .addField("Name", event.getChannel().getName(), false)
+                    .addField("Type", "unknown", false);
         }
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embedBuilder.build()).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embedBuilder.build());
     }
 
-    @Override
-    public void onGuildMemberJoin(GuildMemberJoinEvent event) {
+    @SubscribeEvent
+    public void logMemberJoin(GuildMemberJoinEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Member Joined")
                 .setColor(Color.GREEN)
                 .addField("User", event.getMember().getAsMention() + " (" + event.getMember().getUser().getName() + ")", false)
-                .addField("Created", event.getUser().getTimeCreated().format(TimeUtils.getDcLoggingFormatter()), true)
+                .addField("Created", event.getUser().getTimeCreated().format(TimeUtils.DD_MM_YYY_HH_MM_SS), true)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
-    public void onUserUpdateName(UserUpdateNameEvent event) {
+    @SubscribeEvent
+    public void logMemberUsernameChange(UserUpdateNameEvent event) {
+        if (!guild.isMember(event.getUser())) return;
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Member Name Change")
                 .setThumbnail(event.getUser().getAvatarUrl())
@@ -241,13 +282,12 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("New Name", event.getNewName(), false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
-    public void onGuildMemberUpdateNickname(GuildMemberUpdateNicknameEvent event) {
+    @SubscribeEvent
+    public void logMemberNicknameChange(GuildMemberUpdateNicknameEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Member Nick Change")
                 .setColor(Color.BLUE)
@@ -256,50 +296,42 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("New Nick", event.getNewNickname() != null ? event.getNewNickname() : event.getUser().getName() + "(Username)", false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
+    @SubscribeEvent
     @Deprecated(forRemoval = true)
-    public void onUserUpdateDiscriminator(UserUpdateDiscriminatorEvent event) {
+    public void logMemberDiscriminatorChange(UserUpdateDiscriminatorEvent event) {
+        if (!guild.isMember(event.getUser())) return;
         String oldDiscriminator = event.getOldValue();
         String newDiscriminator = event.getNewValue();
         if (oldDiscriminator.equals(newDiscriminator)) return;
 
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+
         if (newDiscriminator.equals("0000")) {
-            MessageEmbed embed = new EmbedBuilder()
+            embedBuilder
                     .setTitle("Member Updated To New Username")
                     .setThumbnail(event.getUser().getAvatarUrl())
                     .setColor(Color.BLUE)
                     .addField("User", event.getUser().getAsMention() + " (" + event.getUser().getName() + ")", false)
+                    .addField("Old Discriminator", event.getOldDiscriminator(), false);
+        } else {
+            embedBuilder
+                    .setTitle("Member Discriminator Change")
+                    .setThumbnail(event.getUser().getAvatarUrl())
+                    .setColor(Color.BLUE)
+                    .addField("User", event.getUser().getAsMention() + " (" + event.getUser().getName() + ")", false)
                     .addField("Old Discriminator", event.getOldDiscriminator(), false)
-                    .build();
-
-            TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-            if (textChannel != null)
-                textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
-            return;
+                    .addField("New Discriminator", event.getNewDiscriminator(), false);
         }
 
-        MessageEmbed embed = new EmbedBuilder()
-                .setTitle("Member Discriminator Change")
-                .setThumbnail(event.getUser().getAvatarUrl())
-                .setColor(Color.BLUE)
-                .addField("User", event.getUser().getAsMention() + " (" + event.getUser().getName() + ")", false)
-                .addField("Old Discriminator", event.getOldDiscriminator(), false)
-                .addField("New Discriminator", event.getNewDiscriminator(), false)
-                .build();
-
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embedBuilder.build());
     }
 
-
-    @Override
-    public void onUserUpdateAvatar(UserUpdateAvatarEvent event) {
+    @SubscribeEvent
+    public void logMemberAvatarChange(UserUpdateAvatarEvent event) {
+        if (!guild.isMember(event.getUser())) return;
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Member Avatar Change")
                 .setColor(Color.BLUE)
@@ -314,31 +346,31 @@ public class LoggingListeners extends ListenerAdapter {
         if (event.getNewAvatar() != null)
             newImage = downloadAvatar("newImage.png", event.getNewAvatar());
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null) {
-            MessageCreateAction messageAction = textChannel.sendMessageEmbeds(embed);
-            if (oldImage != null) messageAction.addFiles(oldImage);
-            if (newImage != null) messageAction.addFiles(newImage);
-            messageAction.setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        MessageCreateAction logMessageAction = buildLogMessage(logChannel, embed);
+        if (logMessageAction != null) {
+            if (oldImage != null)
+                logMessageAction.addFiles(oldImage);
+            if (newImage != null)
+                logMessageAction.addFiles(newImage);
+            logMessageAction.queue();
         }
     }
 
-
-    @Override
-    public void onGuildMemberRemove(GuildMemberRemoveEvent event) {
+    @SubscribeEvent
+    public void logMemberLeave(GuildMemberRemoveEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Member Left")
                 .setColor(Color.RED)
                 .addField("User", "<@" + event.getUser().getId() + ">" + " (" + event.getUser().getName() + ")", false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
-    public void onGuildMemberRoleAdd(GuildMemberRoleAddEvent event) {
+    @SubscribeEvent
+    public void logMemberRoleAddition(GuildMemberRoleAddEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         StringBuilder rolesBuilder = new StringBuilder();
         for (Role role : event.getRoles()) {
             rolesBuilder.append("- ").append(role.getAsMention()).append(" (").append(role.getName()).append(")").append("\n");
@@ -352,13 +384,12 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("Roles added", rolesList, false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
-    public void onGuildMemberRoleRemove(GuildMemberRoleRemoveEvent event) {
+    @SubscribeEvent
+    public void logMemberRoleRemoval(GuildMemberRoleRemoveEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         StringBuilder rolesBuilder = new StringBuilder();
         for (Role role : event.getRoles()) {
             rolesBuilder.append("- ").append(role.getAsMention()).append(" (").append(role.getName()).append(")").append("\n");
@@ -372,39 +403,36 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("Roles removed", rolesList, false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
-    public void onRoleCreate(RoleCreateEvent event) {
+    @SubscribeEvent
+    public void logRoleCreation(RoleCreateEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Role Created")
                 .setColor(Color.GREEN)
                 .addField("Role", event.getRole().getAsMention() + " (" + event.getRole().getName() + ")", false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
-    public void onRoleDelete(RoleDeleteEvent event) {
+    @SubscribeEvent
+    public void logRoleDeletion(RoleDeleteEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Role Deleted")
                 .setColor(Color.RED)
                 .addField("Role", event.getRole().getAsMention() + " (" + event.getRole().getName() + ")", false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
-    public void onRoleUpdateName(RoleUpdateNameEvent event) {
+    @SubscribeEvent
+    public void logRoleNameChange(RoleUpdateNameEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Role Updated")
                 .setColor(Color.BLUE)
@@ -413,31 +441,29 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("New Name", event.getNewValue(), false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
-    public void onRoleUpdateColor(RoleUpdateColorEvent event) {
-        String oldColorName = event.getOldColor() == null ? "none" : ColorUtils.getColorNameFromColor(event.getOldColor());
-        String newColorName = event.getNewColor() == null ? "none" : ColorUtils.getColorNameFromColor(event.getNewColor());
+    @SubscribeEvent
+    public void logRoleColorChange(RoleUpdateColorEvent event) {
+        if (!event.getGuild().equals(guild)) return;
+        String oldColorName = event.getOldColor() == null ? "unknown" : ColorUtils.getColorNameFromColor(event.getOldColor());
+        String newColorName = event.getNewColor() == null ? "unknown" : ColorUtils.getColorNameFromColor(event.getNewColor());
 
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Role Updated")
                 .setColor(Color.BLUE)
                 .addField("Role", event.getRole().getAsMention() + " (" + event.getRole().getName() + ")", false)
-                .addField("Old Color", oldColorName + " (" + event.getOldValue() + ")", false)
-                .addField("New Color", newColorName + " (" + event.getNewValue() + ")", false)
+                .addField("Old Color", oldColorName + " (" + getHexStringFromRawRgb(event.getOldColorRaw()) + ")", false)
+                .addField("New Color", newColorName + " (" + getHexStringFromRawRgb(event.getNewColorRaw()) + ")", false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
-    public void onRoleUpdatePermissions(RoleUpdatePermissionsEvent event) {
+    @SubscribeEvent
+    public void logRolePermissionsChange(RoleUpdatePermissionsEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         StringBuilder permissionsBuilder = new StringBuilder();
         for (Permission permission : event.getRole().getPermissions()) {
             permissionsBuilder.append("- ").append(permission.getName()).append("\n");
@@ -451,13 +477,12 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("Permissions", permissionsList, false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
-    public void onGuildInviteCreate(GuildInviteCreateEvent event) {
+    @SubscribeEvent
+    public void logInviteCreation(GuildInviteCreateEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         String inviteExpiration = new SimpleDateFormat("dd.MM.yyyy HH:mm").format(System.currentTimeMillis() + (event.getInvite().getMaxAge() * 1000L));
 
         MessageEmbed embed = new EmbedBuilder()
@@ -470,13 +495,12 @@ public class LoggingListeners extends ListenerAdapter {
                 .addField("Max Uses", event.getInvite().getMaxUses() != 0 ? String.valueOf(event.getInvite().getMaxUses()) : "∞", false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        sendLogMessage(embed);
     }
 
-    @Override
-    public void onGuildVoiceUpdate(GuildVoiceUpdateEvent event) {
+    @SubscribeEvent
+    public void logMemberVoiceStateChange(GuildVoiceUpdateEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.addField("User", event.getMember().getAsMention() + " (" + event.getMember().getUser().getName() + ")", false);
 
@@ -495,45 +519,44 @@ public class LoggingListeners extends ListenerAdapter {
             embedBuilder.addField("Channel", event.getChannelJoined().getAsMention() + " (" + event.getChannelJoined().getName() + ")", false);
         } else return;
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getVoiceLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embedBuilder.build()).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        MessageCreateAction logMessageAction = buildLogMessage(voiceLogChannel, embedBuilder.build());
+        if (logMessageAction != null)
+            logMessageAction.queue();
     }
 
-    @Override
-    public void onGuildVoiceGuildMute(GuildVoiceGuildMuteEvent event) {
+    @SubscribeEvent
+    public void logMemberVoiceMuteStateChange(GuildVoiceGuildMuteEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Voice: User " + (event.isGuildMuted() ? "muted" : "unmuted"))
                 .setColor(Color.BLUE)
                 .addField("User", event.getMember().getAsMention() + " (" + event.getMember().getUser().getName() + ")", false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getVoiceLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        MessageCreateAction logMessageAction = buildLogMessage(voiceLogChannel, embed);
+        if (logMessageAction != null)
+            logMessageAction.queue();
     }
 
-    @Override
-    public void onGuildVoiceGuildDeafen(GuildVoiceGuildDeafenEvent event) {
+    @SubscribeEvent
+    public void logMemberVoiceDeafeningStateChange(GuildVoiceGuildDeafenEvent event) {
+        if (!event.getGuild().equals(guild)) return;
         MessageEmbed embed = new EmbedBuilder()
                 .setTitle("Voice: User " + (event.isGuildDeafened() ? "deafened" : "undeafened"))
                 .setColor(Color.BLUE)
                 .addField("User", event.getMember().getAsMention() + " (" + event.getMember().getUser().getName() + ")", false)
                 .build();
 
-        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getVoiceLogsChannelId());
-        if (textChannel != null)
-            textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
+        MessageCreateAction logMessageAction = buildLogMessage(voiceLogChannel, embed);
+        if (logMessageAction != null)
+            logMessageAction.queue();
     }
 
-    private FileUpload downloadAvatar(String fileName, ImageProxy imageProxy) {
-        return FileUpload.fromStreamSupplier(fileName, () -> {
-            try {
-                return imageProxy.download().get();
-            } catch (Exception e) {
-                return null;
-            }
-        });
+    private void sendLogMessage(MessageEmbed embed, MessageEmbed... embeds) {
+        MessageCreateAction logMessage = buildLogMessage(logChannel, embed, embeds);
+        if (logMessage == null) return;
+
+        logMessage.queue();
     }
 
 }

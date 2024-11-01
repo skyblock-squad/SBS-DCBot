@@ -1,0 +1,4 @@
+todo: move to gson?
+
+Team calender
+custom sounds bot womit man nach vanilla sound suchen kann

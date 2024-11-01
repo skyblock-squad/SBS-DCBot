@@ -6,19 +6,31 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.hooks.SubscribeEvent;
+import net.dv8tion.jda.api.interactions.commands.Command;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.text.TextInput;
+import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
+import net.dv8tion.jda.api.interactions.modals.Modal;
+import skyblocksquad.dcbot.util.Project;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+//todo: update & refactor
+public class SlashCommands {
 
-public class SlashCommands extends ListenerAdapter {
-
-    @Override
+    @SubscribeEvent
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         if (event.getName().equals("sendpingroles")) {
             MessageEmbed embed = new EmbedBuilder()
@@ -33,163 +45,99 @@ public class SlashCommands extends ListenerAdapter {
                             Button.secondary("pingroles-news", "Toggle Role")
                     )
                     .queue(message -> event.reply("Ping roles selection message sent").setEphemeral(true).queue());
-        } else if (event.getName().equals("senddownloads")) {
-            MessageEmbed downloadsEmbed = new EmbedBuilder()
-                    .setTitle("Downloads")
-                    .setColor(Color.BLUE)
-                    .setDescription("Here you can find most of the downloads to our projects")
-                    .addField("Information", "All our maps are for Minecraft JAVA only!\nAlso look at the Planet Minecraft Posts because there may be additional information.\nWe also would appreciate if you download our maps (not all have that) through the link on PM with Ad share", false)
-                    .build();
+        } else if (event.getName().equals("downloads")) {
+            if (event.getSubcommandName() != null)
+                switch (event.getSubcommandName()) {
+                    case "add" -> {
+                        ActionRow titleInput = ActionRow.of(
+                                TextInput.create("title", "Project Title", TextInputStyle.SHORT)
+                                        .setRequired(true)
+                                        .build()
+                        );
 
-            MessageEmbed blockSumoUpdatedProjectEmbed = new EmbedBuilder()
-                    .setTitle("Block Sumo")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://static.planetminecraft.com/files/image/minecraft/project/2023/116/16979230_l.webp")
-                    .setDescription("")
-                    //.addField("Video", "<>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/block-sumo-minigame-updated-1-20-1>", false)
-                    .addField("MC Version", "1.20.1", false)
-                    .addField("Direct Download", "<https://static.planetminecraft.com/files/resource_media/schematic/7by-cskyblocksquad-8-unzip-me.zip>", false)
-                    .build();
+                        ActionRow thumbnailInput = ActionRow.of(
+                                TextInput.create("thumbnail", "Thumbnail URL", TextInputStyle.SHORT)
+                                        //.setRequired(true)
+                                        .build()
+                        );
 
-            MessageEmbed minehuhnProjectEmbed = new EmbedBuilder()
-                    .setTitle("Moorhuhn in Minecraft")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://static.planetminecraft.com/files/image/minecraft/project/2023/306/16717201-thumbnail_l.webp")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/-SxJYDNCRSs>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/we-made-moorhuhn-in-minecraft>", false)
-                    .addField("MC Version (created)", "1.19.4", false)
-                    .addField("Direct Download", "<https://drive.google.com/file/d/1PnfSlbcNDkvNXgD0Ei2-6JlfDj8KrRMI/view>", false)
-                    .build();
+                        ActionRow videoUrlInput = ActionRow.of(
+                                TextInput.create("videoUrl", "Video URL", TextInputStyle.SHORT)
+                                        //.setRequired(true)
+                                        .build()
+                        );
 
-            MessageEmbed fireworkShow2022ProjectEmbed = new EmbedBuilder()
-                    .setTitle("Firework show (2022-2023)")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://static.planetminecraft.com/files/image/minecraft/project/2022/382/16383463-spoiler-f_l.webp")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/cu3GD_3nKxU>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/the-coolest-lightshow-in-minecraft>", false)
-                    .addField("MC Version (created)", "1.19.2", false)
-                    .addField("Direct Download", "<https://drive.google.com/file/d/1npbehMBdoX_zoN2l_4bl_HoZl-v_wJeQ/view>", false)
-                    .build();
+                        ActionRow pmcUrlInput = ActionRow.of(
+                                TextInput.create("pmcUrl", "Planet Minecraft URL", TextInputStyle.SHORT)
+                                        .setRequired(true)
+                                        .build()
+                        );
 
-            MessageEmbed mcKartProjectEmbed = new EmbedBuilder()
-                    .setTitle("MC Kart")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://static.planetminecraft.com/files/image/minecraft/project/2022/659/16008513-thumbnail_l.webp")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/HGrWINVRtGM>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/mario-kart-in-minecraft-1-19>", false)
-                    .addField("MC Version (created)", "1.19.3", false)
-                    .addField("Direct Download", "<https://drive.google.com/file/d/1WUEd87PWf2Wmqqr-Nqgh7duIWoSqOPjU/view>", false)
-                    .build();
+                        ActionRow mcVersionInput = ActionRow.of(
+                                TextInput.create("mcVersion", "Minecraft Version", TextInputStyle.SHORT)
+                                        .setRequired(true)
+                                        .build()
+                        );
 
-            MessageEmbed blockSumoProjectEmbed = new EmbedBuilder()
-                    .setTitle("Block Sumo [old]")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://static.planetminecraft.com/files/image/minecraft/project/2022/315/16118434-thumbnail-blocksumo_l.webp")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/fD3piFgyNpg>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/block-sumo-recreated-by-skyblocksquad-pvp-map>", false)
-                    .addField("MC Version (created)", "1.19.2", false)
-                    .addField("Direct Download", "<https://drive.google.com/file/d/1sRIGt9KS-TPwVn6OSjYUDs86s3LL1DaE/view>", false)
-                    .build();
+                        /*ActionRow downloadUrlInput = ActionRow.of(
+                                TextInput.create("downloadUrl", "Direct Download URL", TextInputStyle.SHORT)
+                                        .setRequired(true)
+                                        .build()
+                        );*/
 
-            MessageEmbed parkourWarriorProjectEmbed = new EmbedBuilder()
-                    .setTitle("Parkour Warrior")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://cdn.discordapp.com/attachments/1026105978166464512/1101789045236957194/hqdefault.jpg")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/QooUJC_JH6s>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/we-recreated-ninja-warrior-in-minecraft>", false)
-                    .addField("MC Version (created)", "1.19", false)
-                    .addField("Direct Download", "<https://drive.google.com/file/d/1AV5bcxZLqoQS3ysq5YviifE-alJqCQJ1/view>", false)
-                    .build();
+                        event.replyModal(
+                                Modal.create("downloads-add-download", "Add Download Project")
+                                        .addComponents(titleInput, thumbnailInput, videoUrlInput, pmcUrlInput, mcVersionInput)
+                                        .build()
+                        ).queue();
+                    }
+                    case "remove" -> {
+                        String title = event.getOption("title", OptionMapping::getAsString);
 
-            MessageEmbed liyueProjectEmbed = new EmbedBuilder()
-                    .setTitle("Liyue Harbour from Genshin Impact")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://static.planetminecraft.com/files/image/minecraft/project/2022/249/15372762-thumliyue_l.webp")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/lnQRGL-yJl4>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/liyue-harbour-from-genshin-impact-in-minecraft-1-1-scale>", false)
-                    .addField("MC Version (created)", "1.18.1", false)
-                    .addField("Direct Download", "<https://drive.google.com/file/d/10DcaTzAyv8d1o2-kRrzlVPjIFeaDTX4I/view>", false)
-                    .build();
+                        Main.getProjectsConfig().getProjects().removeIf(project -> project.getTitle().equals(title));
+                        Main.getProjectsConfig().save();
 
-            MessageEmbed moonstadtProjectEmbed = new EmbedBuilder()
-                    .setTitle("Mondstadt from Genshin Impact")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://static.planetminecraft.com/files/image/minecraft/project/2022/435/15361938-thum_l.webp")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/xB22z0evtIk>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/city-of-mondstadt-from-genshin-impact-in-minecraft-1-1-scale>", false)
-                    .addField("MC Version (created)", "1.17.1", false)
-                    .addField("Direct Download", "<https://drive.google.com/file/d/19NjhJGQWgBhqgYVN8STh_NZ4Cn_83d5f/view>", false)
-                    .build();
+                        event.reply("Project removed successfully!").setEphemeral(true).queue(interactionHook ->
+                                interactionHook.deleteOriginal().queueAfter(5, TimeUnit.SECONDS)
+                        );
+                    }
+                    case "send" -> {
+                        event.deferReply().queue(interactionHook -> {
 
-            MessageEmbed fireworkShow2021ProjectEmbed = new EmbedBuilder()
-                    .setTitle("Firework show (2021-2022)")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://static.planetminecraft.com/files/image/minecraft/project/2021/346/15252262_l.webp")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/lWw9v3Sr4Tw>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/we-made-an-epic-minecraft-firework-show>", false)
-                    .addField("MC Version (created)", "1.17.1", false)
-                    .addField("Direct Download", "<https://drive.google.com/file/d/1jcGCx92U_Fu8im7yF3RohIBU03F9Fuw8/view>", false)
-                    .build();
+                            List<Project> projects = Main.getProjectsConfig().getProjects();
+                            List<MessageEmbed> embeds = new ArrayList<>();
 
-            MessageEmbed phantomProjectEmbed = new EmbedBuilder()
-                    .setTitle("The Phantom")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://cdn.discordapp.com/attachments/1026105978166464512/1101792410834579566/maxresdefault_2.jpg")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/jZVusmJF5dE>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/the-phantom-5357966>", false)
-                    .addField("MC Version (created)", "1.17.1", false)
-                    .addField("Direct Map Download", "<https://drive.google.com/file/d/1Zfxnj4fkyUKVVRvXRKmm158x1944wWri/view>", false)
-                    .addField("Direct Resource Pack Download", "<https://drive.google.com/file/d/1LSDHeb3_XLzzAK1E41EGc2m8-XCIJZuT/view>", false)
-                    .build();
+                            for (Project project : projects) {
+                                EmbedBuilder embedBuilder = new EmbedBuilder()
+                                        .setTitle(project.getTitle())
+                                        .setColor(Color.BLUE)
+                                        .setThumbnail(project.getThumbnail())
+                                        .addField("Video", (project.getVideoUrl().startsWith("http") ? "<" : "") + project.getVideoUrl() + (project.getVideoUrl().startsWith("http") ? ">" : ""), false)
+                                        .addField("Planet Minecraft", "<" + project.getPmcUrl() + ">", false)
+                                        .addField("MC Version", project.getMcVersion(), false);
 
-            MessageEmbed teleporterProjectEmbed = new EmbedBuilder()
-                    .setTitle("Teleporter in Vanilla Minecraft")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://static.planetminecraft.com/files/image/minecraft/data-pack/2021/292/14976430-thum_l.webp")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/rmRZzQnC0J8>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/data-pack/teleporter-in-minecraft-vanilla>", false)
-                    .addField("MC Version (created)", "1.17", false)
-                    .addField("Direct Download", "<https://drive.google.com/file/d/10yiGqi0joZLssM1S2C-kZMSG-g0RNLiN/view>", false)
-                    .build();
+                                if (project.getDownloadUrl() != null)
+                                    embedBuilder.addField("Direct Download", "<" + project.getDownloadUrl() + ">", false);
 
-            MessageEmbed capsuleProjectEmbed = new EmbedBuilder()
-                    .setTitle("The Capsule")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://cdn.discordapp.com/attachments/1026105978166464512/1101789716615012402/maxresdefault.jpg")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/qehxkV46LnA>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/the-capsule-by-sbs>", false)
-                    .addField("MC Version (created)", "1.16.1", false)
-                    .addField("Direct Download", "<https://drive.google.com/file/d/1otCwAdkd6Fw3EkGxgliT-IM2oNvBN3TS/view>", false)
-                    .build();
+                                embeds.add(embedBuilder.build());
+                            }
 
-            MessageEmbed easterspecialProjectEmbed = new EmbedBuilder()
-                    .setTitle("Easter Special (2021)")
-                    .setColor(Color.BLUE)
-                    .setThumbnail("https://cdn.discordapp.com/attachments/1026105978166464512/1101789925722038292/maxresdefault_1.jpg")
-                    .setDescription("")
-                    .addField("Video", "<https://youtu.be/O5v91ZZDxeE>", false)
-                    .addField("Planet Minecraft", "<https://www.planetminecraft.com/project/easter-special-map>", false)
-                    .addField("MC Version (created)", "1.16.1", false)
-                    .addField("Direct Download", "<https://drive.google.com/file/d/1JazUizsQaG3b1XBl0nNwYWT-WkbFqY-S/view>", false)
-                    .build();
+                            for (MessageEmbed embed : embeds)
+                                event.getChannel().sendMessageEmbeds(embed).setSuppressedNotifications(true).queue();
 
+                            MessageEmbed infoEmbed = new EmbedBuilder()
+                                    .setTitle("Downloads")
+                                    .setColor(Color.BLUE)
+                                    .setDescription("Here you can find most of the downloads to our projects")
+                                    .addField("Information", "All our maps are for Minecraft JAVA only!\nAlso look at the Planet Minecraft Posts because there may be additional information.\nWe also would appreciate if you download our maps (not all have that) through the link on PM with Ad share", false)
+                                    .build();
 
-            event.getChannel()
-                    .sendMessageEmbeds(downloadsEmbed, blockSumoUpdatedProjectEmbed, minehuhnProjectEmbed, fireworkShow2022ProjectEmbed, mcKartProjectEmbed, blockSumoProjectEmbed, parkourWarriorProjectEmbed, liyueProjectEmbed, moonstadtProjectEmbed, fireworkShow2021ProjectEmbed)
-                    .queue(message -> event.reply("Downloads message sent").setEphemeral(true).queue());
-            event.getChannel().sendMessageEmbeds(phantomProjectEmbed, teleporterProjectEmbed, capsuleProjectEmbed, easterspecialProjectEmbed).queue();
+                            event.getChannel().sendMessageEmbeds(infoEmbed).queue();
+
+                            interactionHook.deleteOriginal().queue();
+                        });
+                    }
+                }
         } else if (event.getName().equals("message")) {
             String message = event.getOption("message").getAsString();
 
@@ -207,7 +155,7 @@ public class SlashCommands extends ListenerAdapter {
                                 .setFooter("")
                                 .build();
 
-                        TextChannel textChannel = Main.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
+                        TextChannel textChannel = event.getJDA().getTextChannelById(Main.getConfig().getLogsChannelId());
                         if (textChannel != null) {
                             textChannel.sendMessageEmbeds(embed).setSuppressedNotifications(Main.getConfig().isSilentLogMessages()).queue();
                         }
@@ -221,6 +169,50 @@ public class SlashCommands extends ListenerAdapter {
                     getMessagesAsync(channel, amount, messages ->
                             interactionHook.editOriginal("Removed " + channel.purgeMessages(messages).size() + " messages.").queue())
             );
+        }
+    }
+
+    @SubscribeEvent
+    public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
+        switch (event.getName()) {
+            case "downloads" -> {
+                if ("remove".equals(event.getSubcommandName())) {
+                    List<Command.Choice> options = Main.getProjectsConfig().getProjects().stream()
+                            .map(Project::getTitle)
+                            .filter(title -> title.startsWith(event.getFocusedOption().getValue()))
+                            .map(title -> new Command.Choice(title, title))
+                            .collect(Collectors.toList());
+                    event.replyChoices(options).queue();
+                }
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void onModalInteraction(ModalInteractionEvent event) {
+        switch (event.getModalId()) {
+            case "downloads-add-download" -> {
+                String title = event.getValue("title").getAsString();
+                String videoUrl = event.getValue("videoUrl") != null ? event.getValue("videoUrl").getAsString() : "*none*";
+                String pmcUrl = event.getValue("pmcUrl").getAsString();
+                String mcVersion = event.getValue("mcVersion").getAsString();
+                String thumbnail = event.getValue("thumbnail") != null ? event.getValue("thumbnail").getAsString() : null;
+
+                Project newProject = new Project();
+                newProject.setTitle(title);
+                newProject.setVideoUrl(videoUrl);
+                newProject.setPmcUrl(pmcUrl);
+                newProject.setMcVersion(mcVersion);
+                newProject.setThumbnail(thumbnail);
+                newProject.setDateCreated(System.currentTimeMillis());
+
+                Main.getProjectsConfig().getProjects().add(newProject);
+                Main.getProjectsConfig().save();
+
+                event.reply("Project '" + title + "' added successfully!").setEphemeral(true).queue(interactionHook ->
+                        interactionHook.deleteOriginal().queueAfter(5, TimeUnit.SECONDS)
+                );
+            }
         }
     }
 

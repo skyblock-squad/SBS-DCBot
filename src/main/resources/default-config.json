@@ -1,5 +1,6 @@
 {
   "botToken": "DISCORD_BOT_TOKEN",
+  "guildId": 0,
   "welcomeChannelId": 0,
   "logsChannelId": 0,
   "voiceLogsChannelId": 0,

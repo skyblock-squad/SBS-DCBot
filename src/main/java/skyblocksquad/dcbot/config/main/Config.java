@@ -9,7 +9,7 @@ import java.nio.file.Path;
 public class Config extends JSONConfig {
 
     private String botToken;
-    private long welcomeChannelId, logsChannelId, voiceLogsChannelId, memberRoleId, pingRolesNewsPingRoleId;
+    private long guildId, welcomeChannelId, logsChannelId, voiceLogsChannelId, memberRoleId, pingRolesNewsPingRoleId;
     private boolean silentLogMessages;
 
     public Config() {
@@ -18,6 +18,10 @@ public class Config extends JSONConfig {
 
     public String getBotToken() {
         return botToken;
+    }
+
+    public long getGuildId() {
+        return guildId;
     }
 
     public long getWelcomeChannelId() {
@@ -47,6 +51,7 @@ public class Config extends JSONConfig {
     @Override
     protected void load(JSONObject object) {
         botToken = object.getString("botToken");
+        guildId = object.getLong("guildId");
         welcomeChannelId = object.getLong("welcomeChannelId");
         logsChannelId = object.getLong("logsChannelId");
         voiceLogsChannelId = object.getLong("voiceLogsChannelId");

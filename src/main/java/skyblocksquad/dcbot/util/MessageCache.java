@@ -8,26 +8,18 @@ import java.nio.charset.StandardCharsets;
 
 public class MessageCache {
 
-    private static final RandomAccessFile accessFile;
-
-    static {
-        try {
-            accessFile = new RandomAccessFile("messageCache.bin", "rw");
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private static final RandomAccessFile ACCESS_FILE;
 
     public static synchronized void addMessage(CachedMessage cachedMessage) {
         //String line = String.format("%s;%s;%s;%s", cachedMessage.getMessageId(), cachedMessage.getContentRaw(), cachedMessage.getAuthorTag(), cachedMessage.isBot());
         try {
             byte[] encodedContent = cachedMessage.contentRaw().getBytes(StandardCharsets.UTF_8);
-            accessFile.seek(accessFile.length());
-            accessFile.writeLong(cachedMessage.messageId());
-            accessFile.writeShort(8 + 1 + encodedContent.length);
-            accessFile.writeLong(cachedMessage.authorId());
-            accessFile.writeBoolean(cachedMessage.isBot());
-            accessFile.write(encodedContent);
+            ACCESS_FILE.seek(ACCESS_FILE.length());
+            ACCESS_FILE.writeLong(cachedMessage.messageId());
+            ACCESS_FILE.writeShort(8 + 1 + encodedContent.length);
+            ACCESS_FILE.writeLong(cachedMessage.authorId());
+            ACCESS_FILE.writeBoolean(cachedMessage.isBot());
+            ACCESS_FILE.write(encodedContent);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -35,18 +27,18 @@ public class MessageCache {
 
     public static synchronized CachedMessage getMessage(long messageId) {
         try {
-            accessFile.seek(0);
+            ACCESS_FILE.seek(0);
             long readMessageId;
             int packLength;
             while (true) {
-                readMessageId = accessFile.readLong();
-                packLength = accessFile.readUnsignedShort();
+                readMessageId = ACCESS_FILE.readLong();
+                packLength = ACCESS_FILE.readUnsignedShort();
                 if (readMessageId == messageId) {
                     if (packLength < 9) throw new IOException("To less bytes available to read 'authorId' and 'isBot'");
-                    long authorId = accessFile.readLong();
-                    boolean isBot = accessFile.readBoolean();
+                    long authorId = ACCESS_FILE.readLong();
+                    boolean isBot = ACCESS_FILE.readBoolean();
                     byte[] encodedContent = new byte[packLength - 9];
-                    accessFile.readFully(encodedContent);
+                    ACCESS_FILE.readFully(encodedContent);
                     return new CachedMessage(
                             readMessageId,
                             authorId,
@@ -54,7 +46,7 @@ public class MessageCache {
                             new String(encodedContent, StandardCharsets.UTF_8)
                     );
                 } else {
-                    accessFile.skipBytes(packLength);
+                    ACCESS_FILE.skipBytes(packLength);
                 }
             }
         } catch (IOException e) {
@@ -68,37 +60,45 @@ public class MessageCache {
         String line = String.format("%s;%s;%s;%s", messageId, cachedMessage.getContentRaw(), cachedMessage.getAuthorTag(), cachedMessage.isBot());
         FileHandler.removeLineFromFile(messageCacheFileName, line);*/
         try {
-            accessFile.seek(0);
+            ACCESS_FILE.seek(0);
             long readMessageId;
             int packLength;
             while (true) {
-                readMessageId = accessFile.readLong();
-                packLength = accessFile.readUnsignedShort();
+                readMessageId = ACCESS_FILE.readLong();
+                packLength = ACCESS_FILE.readUnsignedShort();
                 if (readMessageId == messageId) {
-                    long writePointer = accessFile.getFilePointer() - 8 - 2; // 8 byte (long) messageId - 2 byte (short) pack length
-                    long readPointer = accessFile.getFilePointer() + packLength;
+                    long writePointer = ACCESS_FILE.getFilePointer() - 8 - 2; // 8 byte (long) messageId - 2 byte (short) pack length
+                    long readPointer = ACCESS_FILE.getFilePointer() + packLength;
 
                     byte[] buffer = new byte[1024];
                     int length;
                     while (true) {
-                        accessFile.seek(readPointer);
-                        if ((length = accessFile.read(buffer)) <= 0) break;
+                        ACCESS_FILE.seek(readPointer);
+                        if ((length = ACCESS_FILE.read(buffer)) <= 0) break;
                         readPointer += length;
-                        accessFile.seek(writePointer);
+                        ACCESS_FILE.seek(writePointer);
                         writePointer += length;
-                        accessFile.write(buffer, 0, length);
+                        ACCESS_FILE.write(buffer, 0, length);
                     }
 
-                    accessFile.setLength(writePointer);
+                    ACCESS_FILE.setLength(writePointer);
                     break;
                 } else {
-                    accessFile.skipBytes(packLength);
+                    ACCESS_FILE.skipBytes(packLength);
                 }
             }
         } catch (IOException e) {
             if (!(e instanceof EOFException)) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    static {
+        try {
+            ACCESS_FILE = new RandomAccessFile("messageCache.bin", "rw");
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 

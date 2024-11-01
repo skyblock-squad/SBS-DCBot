@@ -4,15 +4,7 @@ import java.time.format.DateTimeFormatter;
 
 public class TimeUtils {
 
-    private static final DateTimeFormatter loggingTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-    private static final DateTimeFormatter dcChatConnectionDateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
-
-    public static DateTimeFormatter getLoggingTimeFormatter() {
-        return loggingTimeFormatter;
-    }
-
-    public static DateTimeFormatter getDcLoggingFormatter() {
-        return dcChatConnectionDateFormatter;
-    }
+    public static final DateTimeFormatter HH_MM_SS_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    public static final DateTimeFormatter DD_MM_YYY_HH_MM_SS = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
 }

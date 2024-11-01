@@ -2,7 +2,6 @@ package skyblocksquad.dcbot.config;
 
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import skyblocksquad.dcbot.Main;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,7 +9,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.logging.Level;
 
 @SuppressWarnings("unused")
 public abstract class JSONConfig {
@@ -47,11 +45,11 @@ public abstract class JSONConfig {
                 object = new JSONObject(new JSONTokener(reader));
             }
             if (object.isEmpty())
-                Main.getLogger().warning("Config " + path + " in " + getClass().getName() + " is empty");
+                System.out.println("Warning: Config " + path + " in " + getClass().getName() + " is empty");
             load(object);
             return true;
         } catch (Exception e) {
-            Main.getLogger().log(Level.SEVERE, "Failed to load " + path + " in " + getClass().getName(), e);
+            System.out.println("Error: Failed to load " + path + " in " + getClass().getName());
             createBackupCopy();
             return false;
         }
@@ -65,7 +63,7 @@ public abstract class JSONConfig {
             else backupFile = backupFile.resolve(fileName);
             Files.copy(path, backupFile);
         } catch (Exception e) {
-            Main.getLogger().log(Level.SEVERE, "Failed to create a backup of " + path + " in " + getClass().getName(), e);
+            System.out.println("Error: Failed to create a backup of " + path + " in " + getClass().getName());
         }
     }
 
@@ -90,7 +88,7 @@ public abstract class JSONConfig {
             }
             return true;
         } catch (Exception e) {
-            Main.getLogger().log(Level.SEVERE, "Failed to save " + path + " in " + getClass().getName(), e);
+            System.out.println("Error: Failed to save " + path + " in " + getClass().getName());
             return false;
         }
     }
