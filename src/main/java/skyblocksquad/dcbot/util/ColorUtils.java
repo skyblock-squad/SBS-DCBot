@@ -197,6 +197,14 @@ public class ColorUtils {
         return getColorNameFromRgb(r, g, b);
     }
 
+    public static String rgbToHexString(int rgb) {
+        int red = (rgb >> 16) & 0xFF;
+        int green = (rgb >> 8) & 0xFF;
+        int blue = rgb & 0xFF;
+
+        return String.format("#%02x%02x%02x", red, green, blue);
+    }
+
     public static int colorToHex(Color c) {
         return Integer.decode("0x"
                 + Integer.toHexString(c.getRGB()).substring(2));

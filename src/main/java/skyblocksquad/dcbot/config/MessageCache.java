@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot.util;
+package skyblocksquad.dcbot.config;
 
 import java.io.EOFException;
 import java.io.FileNotFoundException;

@@ -2,7 +2,6 @@ package skyblocksquad.dcbot.config;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import skyblocksquad.dcbot.util.Project;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

@@ -2,8 +2,6 @@ package skyblocksquad.dcbot;
 
 import skyblocksquad.dcbot.config.ProjectsConfig;
 import skyblocksquad.dcbot.config.main.Config;
-import skyblocksquad.dcbot.util.JDAManager;
-
 
 public class Main {
 

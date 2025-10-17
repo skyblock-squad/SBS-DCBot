@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot.util;
+package skyblocksquad.dcbot.config;
 
 import org.json.JSONObject;
 

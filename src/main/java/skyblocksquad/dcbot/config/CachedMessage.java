@@ -1,8 +1,8 @@
-package skyblocksquad.dcbot.util;
+package skyblocksquad.dcbot.config;
 
 public record CachedMessage(long messageId, long authorId, boolean isBot, String contentRaw) {
 
-    public String getAuthorAsMention() {
+    public String authorAsMention() {
         return "<@" + Long.toUnsignedString(authorId) + ">";
     }
 

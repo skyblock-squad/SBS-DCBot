@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot.util;
+package skyblocksquad.dcbot;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -15,18 +15,17 @@ import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import skyblocksquad.dcbot.Main;
-import skyblocksquad.dcbot.SlashCommands;
-import skyblocksquad.dcbot.listeners.GeneralListeners;
-import skyblocksquad.dcbot.listeners.LoggingListeners;
+import skyblocksquad.dcbot.listeners.ChannelActivityManager;
+import skyblocksquad.dcbot.listeners.GeneralListener;
+import skyblocksquad.dcbot.listeners.LoggingListener;
 
 public class JDAManager {
 
     public void initialize(String botToken) {
         try {
             JDA jda = JDABuilder.createDefault(botToken)
-                    .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_VOICE_STATES)
-                    .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
+                    .enableIntents(GatewayIntent.GUILD_MEMBERS, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_VOICE_STATES, GatewayIntent.GUILD_PRESENCES)
+                    .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ACTIVITY)
                     .setMemberCachePolicy(MemberCachePolicy.ALL)
                     .setActivity(Activity.customStatus("Is watching YouTube"))
                     .setStatus(OnlineStatus.DO_NOT_DISTURB)
@@ -51,7 +50,10 @@ public class JDAManager {
         if (guild == null)
             throw new RuntimeException("Guild with id '" + Main.getConfig().getGuildId() + "' could not be found");
 
-        event.getJDA().addEventListener(new GeneralListeners(guild), new LoggingListeners(guild));
+        event.getJDA().addEventListener(
+                new GeneralListener(guild.getIdLong()),
+                new LoggingListener(guild),
+                new ChannelActivityManager(guild));
 
         setupCommands(event.getJDA());
     }
@@ -81,10 +83,6 @@ public class JDAManager {
 
         jda.upsertCommand("clear", "Remove a specified amount of messages")
                 .addOption(OptionType.INTEGER, "amount", "The amount of messages to delete", true)
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR))
-                .queue();
-
-        jda.upsertCommand("protection", "No description")
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR))
                 .queue();
     }
