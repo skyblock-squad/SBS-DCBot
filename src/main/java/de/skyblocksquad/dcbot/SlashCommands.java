@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot;
+package de.skyblocksquad.dcbot;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -23,7 +23,7 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
-import skyblocksquad.dcbot.config.Project;
+import de.skyblocksquad.dcbot.config.Project;
 
 //todo: update & refactor
 public class SlashCommands {

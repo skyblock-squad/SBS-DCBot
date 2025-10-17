@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot.config;
+package de.skyblocksquad.dcbot.config;
 
 import org.json.JSONObject;
 import org.json.JSONTokener;

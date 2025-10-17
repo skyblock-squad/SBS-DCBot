@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot.util;
+package de.skyblocksquad.dcbot.util;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;

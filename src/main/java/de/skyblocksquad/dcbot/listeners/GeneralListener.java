@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot.listeners;
+package de.skyblocksquad.dcbot.listeners;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -7,7 +7,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.SubscribeEvent;
-import skyblocksquad.dcbot.Main;
+import de.skyblocksquad.dcbot.Main;
 
 import java.awt.*;
 

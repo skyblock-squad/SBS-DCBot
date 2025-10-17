@@ -1,7 +1,7 @@
-package skyblocksquad.dcbot;
+package de.skyblocksquad.dcbot;
 
-import skyblocksquad.dcbot.config.ProjectsConfig;
-import skyblocksquad.dcbot.config.main.Config;
+import de.skyblocksquad.dcbot.config.ProjectsConfig;
+import de.skyblocksquad.dcbot.config.main.Config;
 
 public class Main {
 

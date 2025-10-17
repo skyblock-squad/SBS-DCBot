@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot.listeners;
+package de.skyblocksquad.dcbot.listeners;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -38,12 +38,12 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.ImageProxy;
 import net.dv8tion.jda.api.utils.TimeUtil;
 import org.jetbrains.annotations.Nullable;
-import skyblocksquad.dcbot.Main;
-import skyblocksquad.dcbot.config.CachedMessage;
-import skyblocksquad.dcbot.config.MessageCache;
-import skyblocksquad.dcbot.util.ColorUtils;
-import skyblocksquad.dcbot.util.EmbedUtils;
-import skyblocksquad.dcbot.util.TimeUtils;
+import de.skyblocksquad.dcbot.Main;
+import de.skyblocksquad.dcbot.config.CachedMessage;
+import de.skyblocksquad.dcbot.config.MessageCache;
+import de.skyblocksquad.dcbot.util.ColorUtils;
+import de.skyblocksquad.dcbot.util.EmbedUtils;
+import de.skyblocksquad.dcbot.util.TimeUtils;
 
 import java.awt.*;
 import java.text.SimpleDateFormat;

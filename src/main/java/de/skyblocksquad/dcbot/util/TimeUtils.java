@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot.util;
+package de.skyblocksquad.dcbot.util;
 
 import java.time.format.DateTimeFormatter;
 

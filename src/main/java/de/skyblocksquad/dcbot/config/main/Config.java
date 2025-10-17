@@ -1,7 +1,7 @@
-package skyblocksquad.dcbot.config.main;
+package de.skyblocksquad.dcbot.config.main;
 
 import org.json.JSONObject;
-import skyblocksquad.dcbot.config.JSONConfig;
+import de.skyblocksquad.dcbot.config.JSONConfig;
 
 import java.nio.file.Path;
 

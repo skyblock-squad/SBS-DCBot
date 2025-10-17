@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot.listeners;
+package de.skyblocksquad.dcbot.listeners;
 
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
@@ -13,7 +13,7 @@ import net.dv8tion.jda.api.events.user.UserActivityEndEvent;
 import net.dv8tion.jda.api.events.user.UserActivityStartEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateOnlineStatusEvent;
 import net.dv8tion.jda.api.hooks.SubscribeEvent;
-import skyblocksquad.dcbot.util.StringUtils;
+import de.skyblocksquad.dcbot.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;

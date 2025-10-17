@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot.config;
+package de.skyblocksquad.dcbot.config;
 
 public record CachedMessage(long messageId, long authorId, boolean isBot, String contentRaw) {
 

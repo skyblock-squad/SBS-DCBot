@@ -1,4 +1,4 @@
-package skyblocksquad.dcbot;
+package de.skyblocksquad.dcbot;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -15,9 +15,9 @@ import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import skyblocksquad.dcbot.listeners.ChannelActivityManager;
-import skyblocksquad.dcbot.listeners.GeneralListener;
-import skyblocksquad.dcbot.listeners.LoggingListener;
+import de.skyblocksquad.dcbot.listeners.ChannelActivityManager;
+import de.skyblocksquad.dcbot.listeners.GeneralListener;
+import de.skyblocksquad.dcbot.listeners.LoggingListener;
 
 public class JDAManager {
 
